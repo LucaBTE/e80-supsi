@@ -11,23 +11,12 @@
 // Reset. WARNING: deletes the whole database. Uncomment only if needed.
 // MATCH (n) DETACH DELETE n
 
-// ---------- Constraints: one key per label ----------
-CREATE CONSTRAINT source_name    IF NOT EXISTS FOR (n:Source)         REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT document_id    IF NOT EXISTS FOR (n:Document)       REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT chunk_id       IF NOT EXISTS FOR (n:Chunk)          REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT project_name   IF NOT EXISTS FOR (n:Project)        REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT process_code   IF NOT EXISTS FOR (n:Process)        REQUIRE n.code IS UNIQUE;
-CREATE CONSTRAINT activity_id    IF NOT EXISTS FOR (n:Activity)       REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT role_name      IF NOT EXISTS FOR (n:Role)           REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT person_name    IF NOT EXISTS FOR (n:Person)         REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT orgunit_name   IF NOT EXISTS FOR (n:OrgUnit)        REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT company_code   IF NOT EXISTS FOR (n:Company)        REQUIRE n.code IS UNIQUE;
-CREATE CONSTRAINT system_name    IF NOT EXISTS FOR (n:System)         REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT bo_name        IF NOT EXISTS FOR (n:BusinessObject) REQUIRE n.name IS UNIQUE;
-CREATE CONSTRAINT requirement_id IF NOT EXISTS FOR (n:Requirement)    REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT testcase_id    IF NOT EXISTS FOR (n:TestCase)       REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT issue_id       IF NOT EXISTS FOR (n:Issue)          REQUIRE n.id IS UNIQUE;
-CREATE CONSTRAINT org_name       IF NOT EXISTS FOR (n:Organization)   REQUIRE n.name IS UNIQUE;
+// ---------- Constraints on the source layer, indexes on domain keys ----------
+// No uniqueness on domain labels: neo4j-graphrag writes a node per extraction
+// and merges duplicates afterwards (see src/e80kb/db.py init_schema).
+CREATE CONSTRAINT source_name    IF NOT EXISTS FOR (n:Source)   REQUIRE n.name IS UNIQUE;
+CREATE CONSTRAINT document_id    IF NOT EXISTS FOR (n:Document) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT chunk_id       IF NOT EXISTS FOR (n:Chunk)    REQUIRE n.id IS UNIQUE;
 
 // =====================================================================
 // LAYER 2 - DOMAIN: nodes
@@ -156,10 +145,10 @@ MATCH (p:Project {name:x.project})
 MERGE (p)-[:HAS_TEST]->(t);
 
 UNWIND [
-  {id:'ISS-001', text:'Fatture senza ordine registrate a mano (Excel + batch input FB60)'},
-  {id:'ISS-002', text:'Il rinnovo automatico può creare Offer e Quote duplicate'}
+  {id:'ISS-001', description:'Fatture senza ordine registrate a mano (Excel + batch input FB60)'},
+  {id:'ISS-002', description:'Il rinnovo automatico può creare Offer e Quote duplicate'}
 ] AS x
-MERGE (i:Issue {id:x.id}) SET i.text = x.text;
+MERGE (i:Issue {id:x.id}) SET i.description = x.description;
 
 // =====================================================================
 // LAYER 2 - DOMAIN: processes and activities
@@ -393,7 +382,7 @@ MATCH (i:Issue {id:r[0]}), (s:System {name:r[1]})
 MERGE (i)-[:AFFECTS]->(s);
 
 // =====================================================================
-// LAYER 1 - SOURCES: documents, chunks, mentions
+// LAYER 1 - SOURCES: documents, chunks, FROM_CHUNK links
 // acl = sample value. The loader computes the embeddings.
 // =====================================================================
 
@@ -458,17 +447,17 @@ UNWIND [
    text:'PTP.01.01 - Supplier Qualification. Lanes: Service Owner, Buyer, Department, Supplier. System lane: Supplier qualification - SW.'}
 ] AS x
 MERGE (c:Chunk {id:x.id})
-SET c.text = x.text, c.loc = x.loc, c.seq = x.seq
+SET c.text = x.text, c.loc = x.loc, c.index = x.seq
 WITH c, x
 MATCH (d:Document {id:x.doc})
-MERGE (d)-[:HAS_CHUNK]->(c);
+MERGE (c)-[:FROM_DOCUMENT]->(d);
 
-MATCH (d:Document)-[:HAS_CHUNK]->(c:Chunk)
-WITH d, c ORDER BY c.seq
+MATCH (c:Chunk)-[:FROM_DOCUMENT]->(d:Document)
+WITH d, c ORDER BY c.index
 WITH d, collect(c) AS chunks
 UNWIND range(0, size(chunks) - 2) AS i
 WITH chunks[i] AS a, chunks[i + 1] AS b
-MERGE (a)-[:NEXT]->(b);
+MERGE (a)-[:NEXT_CHUNK]->(b);
 
 // [chunk, label, key]. The key can be name, code or id.
 UNWIND [
@@ -488,7 +477,13 @@ UNWIND [
 ] AS r
 MATCH (c:Chunk {id:r[0]})
 MATCH (e) WHERE r[1] IN labels(e) AND r[2] IN [e.name, e.code, e.id]
-MERGE (c)-[:MENTIONS]->(e);
+MERGE (e)-[:FROM_CHUNK]->(c);
+
+// Domain nodes carry __Entity__, like the ones neo4j-graphrag writes.
+MATCH (n)
+WHERE any(l IN labels(n) WHERE l IN ['Project', 'Process', 'Activity', 'Role', 'Person', 'OrgUnit', 'Company',
+  'Organization', 'System', 'BusinessObject', 'Requirement', 'TestCase', 'Issue'])
+SET n:__Entity__;
 
 // =====================================================================
 // Useful queries (run by hand, one at a time)
@@ -508,7 +503,7 @@ MERGE (c)-[:MENTIONS]->(e);
 //
 // 4. Traceability: from the test to the requirement, the project and the source document:
 //    MATCH (t:TestCase {id:'173/TST-003'})-[:VERIFIES]->(q:Requirement)<-[:HAS_REQ]-(p:Project)
-//    OPTIONAL MATCH (d:Document)-[:HAS_CHUNK]->(c:Chunk)-[:MENTIONS]->(t)
+//    OPTIONAL MATCH (t)-[:FROM_CHUNK]->(c:Chunk)-[:FROM_DOCUMENT]->(d:Document)
 //    RETURN t, q, p, c, d
 //
 // 5. Who do I call about a Salesforce change?
