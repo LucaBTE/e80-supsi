@@ -12,6 +12,7 @@
   --color-accent-2: #FDD155;
   --color-accent-3: #F9C233;
   --color-accent-4: #F0AF10;
+  --color-gap: #FFF6D6;
 
   --font-sans: "Segoe UI", "Open Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 
@@ -33,7 +34,17 @@
     text-underline-offset: 3px;
   }
   a:hover { color: var(--color-accent-4); }
+  :focus-visible { outline: 2px solid var(--color-e80-black); outline-offset: 2px; }
 }
+
+@keyframes e80-fade { from { opacity: 0 } to { opacity: 1 } }
+.fade-in { animation: e80-fade 150ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* Graph nodes: keyboard focus draws a ring instead of the browser outline */
+.gnode { outline: none; }
+.gnode .focus-ring { opacity: 0; }
+.gnode:focus-visible .focus-ring { opacity: 1; }
 
 @layer components {
   /* Card: flat gray surface, 4px amber top rule, square corners */
@@ -48,4 +59,9 @@
   }
   .e80-btn:hover { @apply bg-accent-4 text-e80-black; }
   .e80-btn:disabled { @apply opacity-60 cursor-wait; }
+  .e80-btn-outline {
+    @apply inline-flex items-center gap-2 border border-e80-black bg-white px-4 py-2.5 text-xs font-bold uppercase leading-none tracking-eyebrow transition-colors duration-150 cursor-pointer;
+  }
+  .e80-btn-outline:hover { @apply bg-accent; }
+  .e80-panel-title { @apply text-sm font-bold uppercase tracking-title; }
 }

@@ -1,0 +1,60 @@
+# ---- python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- scorer model weights (downloaded on first run, never committed) ----
+scorer/.models/
+.models/
+# model caches that can land outside .models/
+torch/
+hub/
+open_clip/
+u2net/
+.cache/
+
+# ---- dataset: never committed ----
+sartiq_neural_wave_2026/
+dataset/
+**/dataset/
+holdout/
+
+# ---- predictions / scores / scratch ----
+predictions/
+submissions/
+val_out/
+sanity_out/
+val_manifest.jsonl
+leaderboard.csv
+scores.jsonl
+review.csv
+garments.csv
+
+# ---- scorer debug contact sheets (debug --out sheet_<id>.jpg) ----
+sheet_*.jpg
+sheet_*.jpeg
+sheet_*.png
+
+# ---- archives ----
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# ---- local config / secrets ----
+.env
+.env.*
+*.key
+credentials.json
+
+# ---- editors / os ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
