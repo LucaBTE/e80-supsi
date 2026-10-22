@@ -102,11 +102,15 @@ export default function App() {
   return (
     <div className="flex min-h-dvh min-w-0 flex-col gap-4 px-4 py-4 sm:px-8">
       <header className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <img src={e80Logo} alt="E80 Group" className="h-12 w-[160px] object-contain" />
-          <img src={kipLogo} alt="KiP" className="h-12 w-[68px] object-contain" />
-          <span className="e80-eyebrow">Knowledge Trace</span>
-          <span role="status" className="ml-auto text-xs text-e80-gray">{catalogLoading ? 'Loading catalog…' : catalogError ? 'Catalog unavailable' : `${catalog.entities.length} indexed entities`}</span>
+        <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <img src={kipLogo} alt="KiP" className="h-9 w-[51px] shrink-0 object-contain sm:h-12 sm:w-[68px]" />
+            <span className="text-[11px] font-bold uppercase tracking-title sm:text-sm">Knowledge Trace</span>
+          </div>
+          <img src={e80Logo} alt="E80 Group" className="h-9 w-[110px] shrink-0 object-contain sm:h-12 sm:w-[160px]" />
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span role="status" className="mr-auto text-xs text-e80-gray">{catalogLoading ? 'Loading catalog…' : catalogError ? 'Catalog unavailable' : `${catalog.entities.length} indexed entities`}</span>
           <button className="e80-btn-outline" disabled={catalogLoading} onClick={() => void loadCatalog()}>Refresh catalog</button>
           <a href="/docs" target="_blank" rel="noreferrer" className="text-xs underline">API</a>
         </div>
