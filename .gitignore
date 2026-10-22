@@ -58,3 +58,11 @@ credentials.json
 Thumbs.db
 .idea/
 .vscode/
+.env
+
+data/
+
+.venv/
+__pycache__/
+.pytest_cache/
+uv.lock
