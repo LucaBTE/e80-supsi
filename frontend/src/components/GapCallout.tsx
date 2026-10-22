@@ -10,7 +10,7 @@ export default function GapCallout({ model, selectedId, onSelect }: Props) {
     <section aria-labelledby="gap-title" className="border-l-4 border-accent-4 bg-gap px-4 py-3">
       <h3 id="gap-title" className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-eyebrow">
         <TriangleAlert size={16} strokeWidth={1.8} aria-hidden />
-        Mancanze rilevate · {model.gaps.length}
+        Identified gaps · {model.gaps.length}
       </h3>
       <ul className="space-y-1 text-sm">
         {model.gaps.map((g) => {

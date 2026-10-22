@@ -36,7 +36,7 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (value.trim()) onSearch(value.trim())
+          if (!loading && value.trim()) onSearch(value.trim())
         }}
         className="flex w-full border border-e80-black bg-white"
       >
@@ -52,7 +52,7 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            aria-label="Domande di esempio"
+            aria-label="Example questions"
             className="flex items-center pl-5 pr-1 text-e80-gray hover:text-e80-black"
           >
             <Search size={22} strokeWidth={1.6} />
@@ -60,7 +60,7 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
           )}
           {menuOpen && examples && (
             <div role="menu" className="fade-in absolute left-0 top-full z-40 mt-px w-[min(28rem,80vw)] border border-e80-black bg-white">
-              <p className="e80-eyebrow border-b border-line px-4 py-2">Domande di esempio</p>
+              <p className="e80-eyebrow border-b border-line px-4 py-2">Example questions</p>
               {examples.map((s) => (
                 <button
                   key={s.id}
@@ -80,7 +80,7 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
             </div>
           )}
         </div>
-        <label htmlFor="rag-query" className="sr-only">Domanda</label>
+        <label htmlFor="rag-query" className="sr-only">Question</label>
         <input
           id="rag-query"
           value={value}
@@ -88,10 +88,11 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
           placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent px-4 py-4 text-lg outline-none placeholder:text-e80-gray/70"
           autoComplete="off"
+          maxLength={2000}
         />
         <button type="submit" className="e80-btn shrink-0 px-6" disabled={loading}>
           {loading && <Loader2 size={16} className="animate-spin" />}
-          <span className="hidden sm:inline">{loading ? 'Ricerca' : 'Cerca'}</span>
+          <span className="hidden sm:inline">{loading ? 'Searching' : 'Search'}</span>
           {!loading && <Search size={16} className="sm:hidden" aria-hidden />}
         </button>
       </form>
@@ -103,7 +104,7 @@ export default function SearchBar({ value, onChange, loading, onSearch, examples
             <button
               type="button"
               onClick={onClearScope}
-              aria-label="Rimuovi perimetro"
+              aria-label="Clear scope"
               className="p-0.5 text-e80-gray hover:bg-accent hover:text-e80-black"
             >
               <X size={14} />

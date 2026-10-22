@@ -1,11 +1,14 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Check, Circle, Network, TriangleAlert } from 'lucide-react'
-import { PROJECTS, STATUS_LABEL, type Project } from '../data/projects'
+import type { Project, Scenario } from '../types'
+const STATUS_LABEL: Record<string, string> = { in_progress: 'In progress', planned: 'Planned', closed: 'Closed' }
 import { projectSummary } from '../lib/catalog'
 import { GapStrip } from './badges'
 import Panel from './Panel'
 
 type Props = {
+  projects: Project[]
+  catalog: Scenario
   query: string
   selectedId: string | null
   onSelect: (id: string) => void
@@ -13,14 +16,13 @@ type Props = {
   onOpenProcess: (key: string) => void
 }
 
-const SUMMARIES = Object.fromEntries(PROJECTS.map((p) => [p.id, projectSummary(p)]))
 
 const matches = (p: Project, q: string) =>
   !q || [p.code, p.name, p.owner, p.objective, ...p.themes].some((s) => s.toLowerCase().includes(q))
 
 function StatusTag({ status }: { status: Project['status'] }) {
-  const cls = status === 'in_corso' ? 'bg-e80-black text-white border-e80-black' : status === 'pianificato' ? 'border-dashed border-e80-black' : 'border-line text-e80-gray'
-  return <span className={`inline-flex whitespace-nowrap border px-1.5 py-px text-[10px] font-bold uppercase leading-4 tracking-eyebrow ${cls}`}>{STATUS_LABEL[status]}</span>
+  const cls = status === 'in_progress' ? 'bg-e80-black text-white border-e80-black' : status === 'planned' ? 'border-dashed border-e80-black' : 'border-line text-e80-gray'
+  return <span className={`inline-flex whitespace-nowrap border px-1.5 py-px text-[10px] font-bold uppercase leading-4 tracking-eyebrow ${cls}`}>{STATUS_LABEL[status] ?? status}</span>
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -34,16 +36,17 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 const tbd = <p className="text-sm text-e80-gray">TBD</p>
 
-export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalysis, onOpenProcess }: Props) {
+export default function ProjectsView({ projects, catalog, query, selectedId, onSelect, onOpenAnalysis, onOpenProcess }: Props) {
+  const SUMMARIES = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, projectSummary(p, catalog)])), [projects, catalog])
   const q = query.trim().toLowerCase()
-  const list = PROJECTS.filter((p) => matches(p, q))
+  const list = projects.filter((p) => matches(p, q))
   const selected = list.find((p) => p.id === selectedId) ?? list[0]
   const s = selected && SUMMARIES[selected.id]
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
-      <Panel title="Progetti" meta={list.length} className="max-h-[75vh] lg:max-h-none">
-        {list.length === 0 && <p className="px-5 py-6 text-sm text-e80-gray">Nessun progetto corrisponde alla ricerca.</p>}
+      <Panel title="Projects" meta={list.length} className="max-h-[75vh] lg:max-h-none">
+        {list.length === 0 && <p className="px-5 py-6 text-sm text-e80-gray">No projects match your search.</p>}
         <ul className="divide-y divide-line">
           {list.map((p) => {
             const on = selected?.id === p.id
@@ -64,7 +67,7 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
                   </span>
                   <span className="text-sm text-e80-gray">{p.owner} · {p.period}</span>
                   <span className="flex items-center gap-3 text-xs text-e80-gray">
-                    {p.scenarioId ? `${SUMMARIES[p.id].processes.length} processi impattati` : 'Analisi impatto non disponibile'}
+                    {`${SUMMARIES[p.id].processes.length} processes linked to changes in the graph`}
                     {gaps > 0 && (
                       <span className="flex items-center gap-1 font-semibold text-e80-black">
                         <TriangleAlert size={13} aria-hidden /> {gaps} gap
@@ -79,18 +82,18 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
       </Panel>
 
       <Panel
-        title="Scheda progetto"
+        title="Project details"
         className="min-h-[420px] lg:min-h-0"
         actions={
           selected?.scenarioId && (
-            <button type="button" className="e80-btn ml-auto px-4 py-2 text-xs" onClick={() => onOpenAnalysis(selected.scenarioId!)}>
-              <Network size={14} aria-hidden /> Apri analisi impatto
+            <button type="button" className="e80-btn ml-auto px-4 py-2 text-xs" onClick={() => onOpenAnalysis(`Which processes, systems and people are affected by project "${selected.name}"?`)}>
+              <Network size={14} aria-hidden /> Open impact analysis
             </button>
           )
         }
       >
         {!selected || !s ? (
-          <p className="p-6 text-sm text-e80-gray">Selezionare un progetto.</p>
+          <p className="p-6 text-sm text-e80-gray">Select a project.</p>
         ) : (
           <div key={selected.id} className="fade-in space-y-5 px-5 py-4">
             <div>
@@ -102,33 +105,34 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label="Responsabile · periodo">
+              <Field label="Owner · period">
                 <p className="text-sm">{selected.owner} · {selected.period}</p>
               </Field>
               <Field label="Milestone">
+                {!selected.milestones.length && tbd}
                 <ol className="space-y-1 text-sm">
                   {selected.milestones.map((m) => (
                     <li key={m.label} className="flex items-center gap-2">
-                      {m.done ? <Check size={14} strokeWidth={2.2} aria-label="Completata" /> : <Circle size={12} aria-label="Da completare" />}
+                      {m.done ? <Check size={14} strokeWidth={2.2} aria-label="Completed" /> : <Circle size={12} aria-label="Pending" />}
                       <span className={m.done ? '' : 'text-e80-gray'}>{m.label}</span>
                       <span className="ml-auto tabular-nums text-e80-gray">{m.date}</span>
                     </li>
                   ))}
                 </ol>
               </Field>
-              <Field label="Temi">
+              <Field label="Topics">
                 <div className="flex flex-wrap gap-1.5">
                   {selected.themes.map((t) => <span key={t} className="border border-line bg-surface px-2 py-0.5 text-sm">{t}</span>)}
                 </div>
               </Field>
-              <Field label="Esclusioni">
+              <Field label="Exclusions">
                 {selected.exclusions.length ? (
                   <ul className="list-inside list-disc text-sm marker:text-accent-4">
                     {selected.exclusions.map((x) => <li key={x}>{x}</li>)}
                   </ul>
                 ) : tbd}
               </Field>
-              <Field label="Processi impattati">
+              <Field label="Affected processes">
                 {s.processes.length ? (
                   <div className="flex flex-wrap gap-1.5">
                     {s.processes.map((p) => (
@@ -136,7 +140,7 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
                         key={p.id}
                         type="button"
                         onClick={() => onOpenProcess(p.code ?? p.id)}
-                        title={`Apri ${p.label} nella scheda Processi`}
+                        title={`Open ${p.label} in the Processes tab`}
                         className="border border-line bg-white px-2 py-0.5 text-sm hover:border-e80-black hover:bg-accent"
                       >
                         {p.code ?? p.label}
@@ -145,10 +149,10 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
                   </div>
                 ) : tbd}
               </Field>
-              <Field label="Ruoli coinvolti">
+              <Field label="Roles involved">
                 {s.roles.length ? <p className="text-sm">{s.roles.map((r) => r.label).join(' · ')}</p> : tbd}
               </Field>
-              <Field label="Persone e partner">
+              <Field label="People and partners">
                 {s.people.length ? (
                   <ul className="space-y-0.5 text-sm">
                     {s.people.map((p) => (
@@ -157,11 +161,11 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
                   </ul>
                 ) : tbd}
               </Field>
-              <Field label="Documenti">
+              <Field label="Documents">
                 {selected.documents.length ? (
                   <ul className="space-y-0.5 text-sm">
                     {selected.documents.map((d) => (
-                      <li key={d.doc}>{d.doc}{d.page && <span className="text-e80-gray"> · p. {d.page}</span>}</li>
+                      <li key={`${d.path ?? d.doc}-${d.loc}`}>{d.url ? <a href={d.url} target="_blank" rel="noreferrer" className="underline">{d.doc}</a> : d.doc}{d.page && <span className="text-e80-gray"> · p. {d.page}</span>}</li>
                     ))}
                   </ul>
                 ) : tbd}
@@ -169,7 +173,7 @@ export default function ProjectsView({ query, selectedId, onSelect, onOpenAnalys
             </div>
 
             {s.gaps.length > 0 && (
-              <Field label={`Gap dall'analisi impatto · ${s.gaps.length}`}>
+              <Field label={`Impact analysis gaps · ${s.gaps.length}`}>
                 <ul className="space-y-1.5">
                   {s.gaps.map((g) => (
                     <li key={g.id} className="flex flex-col gap-0.5">

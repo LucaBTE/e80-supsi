@@ -5,18 +5,21 @@ import re
 
 from .. import llm
 from ..catalog import Catalog
-from . import context, text2cypher
+from . import context, document_impact, text2cypher
 
 MAX_ROWS = 50
 
 SYSTEM = """You answer questions from E80's IT department using only the context given: the result of a graph query and numbered source excerpts.
-- Answer in the language of the question. Be concise and concrete.
+- Always answer in English, regardless of the language of the question or sources. Be concise and concrete.
+- Preserve source entity names, codes, document titles and verbatim quotations in their original language.
 - Cite excerpts with [n] right after the sentence they support.
 - Graph rows have no number; state facts from them plainly.
 - If the context does not answer the question, say so. Do not guess."""
 
 
 def ask(question: str, groups: list[str]) -> dict:
+    if impact := document_impact.answer_if_applicable(question, groups):
+        return impact
     # Activities are many and long: the query matches them by name instead.
     catalog = Catalog.load().subset(lambda e: e.label != "Activity")
     cypher, result, error = text2cypher.run(question, catalog.text())

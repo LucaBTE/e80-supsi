@@ -1,5 +1,5 @@
 // =====================================================================
-// E80 GraphRAG - sample seed (schema v0, see tmp.md)
+// E80 GraphRAG - prebuilt sample database (schema in src/e80kb/schema.py)
 // Data taken from the documents in Projects/ and Processes/.
 // Idempotent: uses MERGE only, safe to run again.
 //
@@ -145,8 +145,8 @@ MATCH (p:Project {name:x.project})
 MERGE (p)-[:HAS_TEST]->(t);
 
 UNWIND [
-  {id:'ISS-001', description:'Fatture senza ordine registrate a mano (Excel + batch input FB60)'},
-  {id:'ISS-002', description:'Il rinnovo automatico può creare Offer e Quote duplicate'}
+  {id:'ISS-001', description:'Invoices without a purchase order posted manually (Excel + batch input FB60)'},
+  {id:'ISS-002', description:'Automatic renewal may create duplicate Offer and Quote records'}
 ] AS x
 MERGE (i:Issue {id:x.id}) SET i.description = x.description;
 
@@ -316,7 +316,7 @@ SET w.role = r[2];
 UNWIND [
   ['Ammagamma', 'Document Automation', 'partner'],
   ['Accenture', 'Document Automation', 'partner'],
-  ['Reply',     'Document Automation', 'proposta RPA fatture'],
+  ['Reply',     'Document Automation', 'Invoice RPA proposal'],
   ['Cybercel',  'Qualifica fornitori', 'partner']
 ] AS r
 MATCH (o:Organization {name:r[0]}), (p:Project {name:r[1]})
@@ -383,7 +383,7 @@ MERGE (i)-[:AFFECTS]->(s);
 
 // =====================================================================
 // LAYER 1 - SOURCES: documents, chunks, FROM_CHUNK links
-// acl = sample value. The loader computes the embeddings.
+// ACLs and source excerpts are prebuilt sample data; no ingestion is needed.
 // =====================================================================
 
 UNWIND ['sharepoint', 'signavio', 'devops'] AS x
@@ -437,11 +437,11 @@ UNWIND [
    text:'Start H24 renewals on time. Reduce user manual work. Prevent duplicate commercial records and activity.'},
   {id:'h24-charter-rev1#2', doc:'h24-charter-rev1', seq:2, loc:'p.1 Objectives',
    text:'Create new Opportunity and Quote automatically three months before Contract expiry date.'},
-  {id:'docauto-recap-20260408-ap-it#1', doc:'docauto-recap-20260408-ap-it', seq:1, loc:'Note riunione',
+  {id:'docauto-recap-20260408-ap-it#1', doc:'docauto-recap-20260408-ap-it', seq:1, loc:'Meeting notes',
    text:'La contabilizzazione delle fatture passive avviene con ordine sottostante (transazione MIRO) e senza ordine (gestite manualmente tramite FB60).'},
-  {id:'sp132-reqmatrix-en#RQ-004', doc:'sp132-reqmatrix-en', seq:4, loc:'Requirements Matrix, riga RQ-004',
+  {id:'sp132-reqmatrix-en#RQ-004', doc:'sp132-reqmatrix-en', seq:4, loc:'Requirements Matrix, row RQ-004',
    text:'RQ-004 Availability of relevant customer master data. Constraints: dependent on master-data quality and Project 73 - Plant.'},
-  {id:'h24-testbook-rev1#TST-003', doc:'h24-testbook-rev1', seq:3, loc:'Test Case Planning & Execution, riga TST-003',
+  {id:'h24-testbook-rev1#TST-003', doc:'h24-testbook-rev1', seq:3, loc:'Test Case Planning & Execution, row TST-003',
    text:'TST-003 Duplicate prevention. Prevent duplicate creation when an open H24 Opportunity exists for the same Plant. Result OK.'},
   {id:'ptp-01-01-map#1', doc:'ptp-01-01-map', seq:1, loc:'p.1',
    text:'PTP.01.01 - Supplier Qualification. Lanes: Service Owner, Buyer, Department, Supplier. System lane: Supplier qualification - SW.'}
@@ -478,6 +478,35 @@ UNWIND [
 MATCH (c:Chunk {id:r[0]})
 MATCH (e) WHERE r[1] IN labels(e) AND r[2] IN [e.name, e.code, e.id]
 MERGE (e)-[:FROM_CHUNK]->(c);
+
+// Additional sample excerpts make every seeded document consultable.
+// These passages describe the demo graph; they are not original file contents.
+UNWIND [
+  {doc:'docauto-charter', text:'Demo document: Document Automation is linked to SAP and processes PTP.05.02 and PTP.04.03. Luca Mondini is the PM and Massimo Albertario is the sponsor. Accenture and Ammagamma are partners.'},
+  {doc:'h24-bbp-rev2', text:'Demo document: project Rinnovi Offerte H24, code 173, covers Salesforce and Opportunity and Quote renewals based on Contract records.'},
+  {doc:'h24-bbp-rev3', text:'Demo document: Rinnovi Offerte H24 automatically creates Opportunity and Quote records three months before Contract expiry. Test TST-003 verifies duplicate prevention.'},
+  {doc:'qf-testbook-20260626', text:'Demo document: Qualifica fornitori is linked to process PTP.01.01 Supplier Qualification and the ProcessUnity system. The process involves Buyer and Service Owner.'}
+] AS x
+MATCH (d:Document {id:x.doc})
+MERGE (c:Chunk {id:x.doc + '#demo'})
+SET c.text = x.text, c.loc = 'Demo excerpt', c.index = 1
+MERGE (c)-[:FROM_DOCUMENT]->(d);
+
+UNWIND [
+  ['docauto-charter', 'Project', 'Document Automation'],
+  ['docauto-charter', 'System', 'SAP'],
+  ['docauto-charter', 'Person', 'Luca Mondini'],
+  ['docauto-charter', 'Person', 'Massimo Albertario'],
+  ['h24-bbp-rev2', 'Project', 'Rinnovi Offerte H24'],
+  ['h24-bbp-rev3', 'Project', 'Rinnovi Offerte H24'],
+  ['h24-bbp-rev3', 'System', 'Salesforce'],
+  ['qf-testbook-20260626', 'Project', 'Qualifica fornitori'],
+  ['qf-testbook-20260626', 'Process', 'PTP.01.01'],
+  ['qf-testbook-20260626', 'System', 'ProcessUnity']
+] AS x
+MATCH (c:Chunk {id:x[0] + '#demo'})
+MATCH (n) WHERE x[1] IN labels(n) AND x[2] IN [n.name, n.code, n.id]
+MERGE (n)-[:FROM_CHUNK]->(c);
 
 // Domain nodes carry __Entity__, like the ones neo4j-graphrag writes.
 MATCH (n)

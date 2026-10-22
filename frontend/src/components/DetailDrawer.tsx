@@ -3,6 +3,7 @@ import { ChevronRight, Quote, X } from 'lucide-react'
 import { chainFor, citationsFor, confidenceOf, explain, TYPE_LABEL, type Model } from '../lib/model'
 import { GapStrip } from './badges'
 import { typeIcon } from './icons'
+import ReportButton from './ReportButton'
 
 type Props = {
   model: Model
@@ -36,32 +37,33 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
         </span>
         <div className="min-w-0 flex-1">
           <p className="e80-eyebrow">
-            Perché è impattata · {TYPE_LABEL[e.type]}
-            {model.numbers[id] ? ` · [${model.numbers[id]}]` : ''}
+            {e.type === 'document' ? (id === model.rootId ? 'Changed document' : 'Document to review') : 'Why it is affected'} · {TYPE_LABEL[e.type]}
+            {model.numbers[id] ? ` · #${model.numbers[id]}` : ''}
           </p>
           <h2 id="detail-title" className="text-lg font-bold leading-snug">
             {e.code ? `${e.code} · ` : ''}
             {e.label}
           </h2>
         </div>
-        <button type="button" onClick={onClose} aria-label="Chiudi dettaglio" className="p-1 text-e80-gray hover:bg-accent hover:text-e80-black">
+        <button type="button" onClick={onClose} aria-label="Close details" className="p-1 text-e80-gray hover:bg-accent hover:text-e80-black">
           <X size={18} />
         </button>
       </header>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+        {e.backend && e.type !== 'document' && <ReportButton key={id} target={e.backend} />}
         <div className="flex items-end gap-4">
           <div>
-            <p className="e80-eyebrow">Confidenza</p>
+            <p className="e80-eyebrow">Confidence</p>
             <p className="border-b-4 border-accent text-5xl font-bold leading-tight">
-              {conf !== undefined ? `${Math.round(conf * 100)}%` : 'n/d'}
+              {conf !== undefined ? `${Math.round(conf * 100)}%` : 'n/a'}
             </p>
           </div>
           <p className="pb-1 text-sm">{explain(model, id)}</p>
         </div>
 
         <div>
-          <h3 className="e80-eyebrow mb-2">Catena delle relazioni</h3>
+          <h3 className="e80-eyebrow mb-2">Relationship chain</h3>
           <ol className="flex flex-wrap items-center gap-1 text-sm">
             {chain.map((c, i) => (
               <li key={c} className="flex items-center gap-1">
@@ -80,9 +82,19 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
         </div>
 
         <div>
-          <h3 className="e80-eyebrow mb-2">Passaggi citati</h3>
+          <h3 className="e80-eyebrow mb-2">Graph relationships</h3>
+          <ul className="space-y-1 text-sm">{[...model.incoming[id], ...model.outgoing[id]].map((relation, i) => {
+            const other = model.byId[relation.from === id ? relation.to : relation.from]
+            return <li key={i}><span className="font-semibold">{relation.label ?? relation.kind}</span>{' · '}
+              <button type="button" className="underline" onClick={() => onSelect(other.id)}>{other.code ?? other.label}</button>
+            </li>
+          })}</ul>
+        </div>
+
+        <div>
+          <h3 className="e80-eyebrow mb-2">Cited excerpts</h3>
           {cites.length === 0 ? (
-            <p className="text-sm text-e80-gray">Fonte mancante (TBD).</p>
+            <p className="text-sm text-e80-gray">Source not available (TBD).</p>
           ) : (
             <ul className="space-y-2">
               {cites.map((c, i) => (
@@ -91,6 +103,7 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
                     {c.doc}
                     {c.page ? <span className="font-normal text-e80-gray"> · p. {c.page}</span> : null}
                   </p>
+                  {c.url && <a href={c.url} target="_blank" rel="noreferrer" className="text-xs underline">Open document excerpts</a>}
                   {c.passage && (
                     <p className="flex gap-1.5 italic text-e80-gray">
                       <Quote size={12} className="mt-1 shrink-0" aria-hidden />
@@ -104,9 +117,9 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
         </div>
 
         <div>
-          <h3 className="e80-eyebrow mb-2">Gap collegati</h3>
+          <h3 className="e80-eyebrow mb-2">Related gaps</h3>
           {gaps.length === 0 ? (
-            <p className="text-sm text-e80-gray">Nessun gap rilevato.</p>
+            <p className="text-sm text-e80-gray">No gaps identified.</p>
           ) : (
             <ul className="space-y-1.5">
               {gaps.map((g) => (

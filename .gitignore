@@ -60,7 +60,7 @@ Thumbs.db
 .vscode/
 .env
 
-data/
+/data/
 
 .venv/
 __pycache__/

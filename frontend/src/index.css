@@ -46,6 +46,23 @@
 .gnode .focus-ring { opacity: 0; }
 .gnode:focus-visible .focus-ring { opacity: 1; }
 
+.answer-markdown > :first-child { margin-top: 0; }
+.answer-markdown > :last-child { margin-bottom: 0; }
+.answer-markdown p { margin: 0.45rem 0; }
+.answer-markdown h1, .answer-markdown h2, .answer-markdown h3 { margin: 1rem 0 0.35rem; font-weight: 700; line-height: 1.25; }
+.answer-markdown h1 { font-size: 1.3rem; }
+.answer-markdown h2 { font-size: 1.15rem; }
+.answer-markdown h3 { font-size: 1rem; }
+.answer-markdown ul { margin: 0.4rem 0; padding-left: 1.35rem; list-style: disc; }
+.answer-markdown ol { margin: 0.4rem 0; padding-left: 1.35rem; list-style: decimal; }
+.answer-markdown li { padding-left: 0.15rem; margin: 0.15rem 0; }
+.answer-markdown li > p { margin: 0; }
+.answer-markdown strong { font-weight: 700; }
+.answer-markdown code { background: #fff; padding: 0.05rem 0.2rem; font-size: 0.9em; }
+.answer-markdown pre { overflow-x: auto; background: #fff; padding: 0.75rem; }
+.answer-markdown pre code { padding: 0; }
+.answer-markdown blockquote { border-left: 3px solid var(--color-accent-4); padding-left: 0.8rem; color: var(--color-e80-gray); }
+
 @layer components {
   /* Card: flat gray surface, 4px amber top rule, square corners */
   .e80-card {

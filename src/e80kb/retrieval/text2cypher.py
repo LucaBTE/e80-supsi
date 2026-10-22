@@ -23,7 +23,7 @@ Rules:
 - Use only the labels, relationship types and properties above. Documents and chunks are not queryable.
 - Match entities by the exact keys in the catalog. Activities are not listed: match them by name.
 - When no key fits (a partial name, a surname), match with toLower(n.name) CONTAINS 'word'.
-- Return nodes and relationships, not only their properties, so the user can see the subgraph. Give columns clear aliases.
+- Return nodes and relationships, not only their properties, so the user can see the subgraph. Give columns clear English aliases.
 - Use OPTIONAL MATCH for parts that may be missing, so one missing link does not empty the result.
 - Read only: no CREATE, MERGE, SET, DELETE, CALL or LOAD CSV. No dynamic property access.
 - Reply with the query only. Reply NONE when the graph cannot answer the question.
@@ -37,7 +37,7 @@ OPTIONAL MATCH (p:Process)-[h:HAS_STEP]->(a)
 OPTIONAL MATCH (prj:Project)-[c:CHANGES]->(p)
 RETURN b, u, a, d, r, h, p, c, prj
 
-Question: Chi devo coinvolgere per una modifica a Salesforce?
+Question: Who should be involved in a change to Salesforce?
 MATCH (s:System {{name: 'Salesforce'}})<-[c:CHANGES]-(p:Project)<-[w:WORKS_ON]-(x:Person)
 RETURN s, c, p, w, x
 
@@ -45,7 +45,7 @@ Question: Which test verifies requirement 173/RQ-002 and what was the result?
 MATCH (t:TestCase)-[v:VERIFIES]->(q:Requirement {{id: '173/RQ-002'}})
 RETURN t, v, q
 
-Question: Quali sistemi usa la qualifica fornitori?
+Question: Which systems are used in supplier qualification?
 MATCH (p:Process {{code: 'PTP.01.01'}})-[h:HAS_STEP]->(a:Activity)-[u:USES]->(s:System)
 RETURN p, h, a, u, s"""
 

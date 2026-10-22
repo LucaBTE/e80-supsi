@@ -174,11 +174,11 @@ Buttons:
 
 ## 7. Voice & content
 
-- Language: Italian for internal material, English for international; consistent within a page.
+- Language: English throughout the interface, system messages and documentation. Preserve original source names, codes and quotations.
 - Impersonal, factual third person ("Il progetto prevede…", "Si evidenzia…"). No "I", no "tu".
 - Concise: bullets over paragraphs, one idea per line. Action-oriented — surface risks, decisions, next steps.
 - Uppercase titles and payoff; sentence case body.
-- Italian number convention: `5.000+`, `2.000+`.
+- English number convention: `5,000+`, `2,000+`.
 - Nothing invented: state gaps explicitly ("TBD", "Missing information").
 - Motion: restrained quick fades only — no bounces, no entrance animations on core content.
 

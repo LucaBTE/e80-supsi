@@ -4,7 +4,8 @@ import type { Graph } from '../lib/graph'
 import type { Filter, Model } from '../lib/model'
 import DetailDrawer from './DetailDrawer'
 import ImpactTable from './ImpactTable'
-import { GraphCanvas, Legend } from './ImpactGraph'
+import { Legend } from './ImpactGraph'
+import GraphViewport from './GraphViewport'
 
 type Props = {
   model: Model
@@ -45,18 +46,18 @@ export default function ExpandedView({ onClose, onSelect, ...canvas }: Props) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Grafo, vista estesa"
+      aria-label="Graph, expanded view"
       className="fade-in fixed inset-0 z-50 flex bg-e80-black/40 p-3 sm:p-6"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="flex min-w-0 flex-1 flex-col border border-e80-black bg-white">
         <header className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3">
           <span className="h-5 w-[9px] bg-accent" aria-hidden />
-          <h2 className="e80-panel-title">Grafo</h2>
+          <h2 className="e80-panel-title">Graph</h2>
           <span className="e80-eyebrow hidden md:inline">{model.scenario.label}</span>
-          <div className="ml-auto flex border border-e80-black" role="group" aria-label="Modalità di visualizzazione">
-            {toggle(false, Network, 'Grafo')}
-            {toggle(true, Table2, 'Vista tabella')}
+          <div className="ml-auto flex border border-e80-black" role="group" aria-label="Display mode">
+            {toggle(false, Network, 'Graph')}
+            {toggle(true, Table2, 'Table view')}
           </div>
           <button
             type="button"
@@ -64,7 +65,7 @@ export default function ExpandedView({ onClose, onSelect, ...canvas }: Props) {
             autoFocus
             className="flex items-center gap-2 border border-line px-3 py-1.5 text-xs font-bold uppercase tracking-eyebrow hover:border-e80-black hover:bg-accent"
           >
-            <Minimize2 size={14} aria-hidden /> Riduci
+            <Minimize2 size={14} aria-hidden /> Collapse
           </button>
         </header>
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_26rem]">
@@ -73,7 +74,7 @@ export default function ExpandedView({ onClose, onSelect, ...canvas }: Props) {
               <ImpactTable model={model} filter={filter} selectedId={selectedId} onSelect={onSelect} />
             ) : (
               <div className="h-full bg-[radial-gradient(#E0E0E0_1px,transparent_1px)] [background-size:18px_18px] p-4">
-                <GraphCanvas {...canvas} />
+                <GraphViewport {...canvas} />
               </div>
             )}
           </div>
@@ -81,7 +82,7 @@ export default function ExpandedView({ onClose, onSelect, ...canvas }: Props) {
             <DetailDrawer model={model} id={selectedId} variant="panel" onClose={() => onSelect(null)} onSelect={onSelect} />
           ) : (
             <aside className="hidden border-l border-line bg-surface p-6 text-sm text-e80-gray lg:block">
-              Selezionare un nodo o una riga per vedere perché è impattata, la catena di relazioni e le fonti.
+              Select a node or row to view its impact, relationship chain and sources.
             </aside>
           )}
         </div>

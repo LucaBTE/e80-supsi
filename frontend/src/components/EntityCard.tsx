@@ -15,7 +15,7 @@ export default function EntityCard({ model, id, active, onSelect, onHover }: Pro
   const e = model.byId[id]
   const Icon = typeIcon[e.type]
   const imp = impactOf(model, id)
-  const indirect = model.scope[id] === 'indiretto'
+  const indirect = model.scope[id] === 'indirect'
   const gaps = model.gapsByEntity[id] ?? []
   const parent = e.parent ? model.byId[e.parent] : undefined
   const src = e.sources[0] ?? imp?.sources[0]
@@ -37,31 +37,31 @@ export default function EntityCard({ model, id, active, onSelect, onHover }: Pro
         <Icon size={16} strokeWidth={1.6} aria-hidden />
       </span>
       <span className={`flex min-w-0 flex-1 flex-col gap-1 ${indirect ? 'text-e80-gray' : ''}`}>
-        {e.type === 'attivita' && parent && (
+        {e.type === 'activity' && parent && (
           <span className="truncate text-[11px] font-semibold text-e80-gray">
             {parent.code} · {parent.label}
           </span>
         )}
         <span className="flex items-baseline gap-2">
-          <span className="text-[11px] font-bold text-e80-gray">[{model.numbers[id]}]</span>
+          <span className="text-[11px] font-bold text-e80-gray">#{model.numbers[id]}</span>
           <span className="min-w-0 font-semibold">
-            {e.code && e.type !== 'attivita' ? `${e.code} · ` : ''}
+            {e.code && e.type !== 'activity' ? `${e.code} · ` : ''}
             {e.label}
-            {indirect && <span className="font-normal italic"> (a valle)</span>}
+            {indirect && <span className="font-normal italic"> (downstream)</span>}
           </span>
         </span>
         {e.subtitle && <span className="text-sm text-e80-gray">{e.subtitle}</span>}
 
-        {e.type === 'attivita' && (
+        {e.type === 'activity' && (
           <span className="flex flex-wrap items-center gap-1.5">
             {imp?.change && <ChangeTag change={imp.change} />}
-            {related(model, id, 'usa_sistema', 'out').map((s) => (
+            {related(model, id, 'uses_system', 'out').map((s) => (
               <span key={s.id} className="border border-line bg-white px-1.5 text-[11px] leading-4">{s.label}</span>
             ))}
           </span>
         )}
 
-        {(e.type === 'ruolo' || e.type === 'team' || e.type === 'esterno') && (
+        {(e.type === 'role' || e.type === 'team' || e.type === 'external') && (
           <>
             <span className="flex flex-wrap items-center gap-1.5 text-xs">
               {imp?.level && <LevelBadge level={imp.level} />}
@@ -71,7 +71,7 @@ export default function EntityCard({ model, id, active, onSelect, onHover }: Pro
             </span>
             {imp?.inCharter && (
               <span className="flex items-center gap-1.5 text-xs">
-                <Check size={14} strokeWidth={2} aria-hidden /> Nel charter: {imp.charterRef ?? 'riferimento TBD'}
+                <Check size={14} strokeWidth={2} aria-hidden /> In charter: {imp.charterRef ?? 'riferimento TBD'}
               </span>
             )}
           </>
@@ -81,7 +81,7 @@ export default function EntityCard({ model, id, active, onSelect, onHover }: Pro
 
         <span className="flex flex-wrap items-center gap-2 text-xs text-e80-gray">
           <TypeTag>{TYPE_LABEL[e.type]}</TypeTag>
-          {src ? `${src.doc}${src.page ? ` · p. ${src.page}` : ''}` : 'Fonte TBD'}
+          {src ? `${src.doc}${src.page ? ` · p. ${src.page}` : ''}` : 'Source TBD'}
         </span>
       </span>
     </button>

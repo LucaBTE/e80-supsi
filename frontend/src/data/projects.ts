@@ -1,6 +1,6 @@
 import type { Citation } from '../types'
 
-export type ProjectStatus = 'in_corso' | 'pianificato' | 'chiuso'
+export type ProjectStatus = 'in_progress' | 'planned' | 'closed'
 
 /** Project register. Impacted processes and gaps are derived from the linked scenario, never typed here. */
 export type Project = {
@@ -24,33 +24,33 @@ export const PROJECTS: Project[] = [
     id: 'prj-da',
     code: 'DA-26',
     name: 'Document Automation',
-    status: 'in_corso',
-    owner: 'Direzione finanziaria',
-    period: 'Apr 2026 – Set 2026',
-    objective: 'Valutare l’uso di document intelligence su fatture passive e documenti di trasporto, con integrazione verso l’ERP.',
-    themes: ['Fatture senza ordine', 'Eccezioni e riconciliazioni', 'Consegne parziali'],
-    exclusions: ['Sviluppo e messa in produzione', 'Consulenza legale e fiscale'],
+    status: 'in_progress',
+    owner: 'Finance department',
+    period: 'Apr 2026 – Sep 2026',
+    objective: 'Evaluate document intelligence for supplier invoices and delivery notes, with ERP integration.',
+    themes: ['Invoices without a purchase order', 'Exceptions and reconciliations', 'Partial deliveries'],
+    exclusions: ['Development and deployment', 'Legal and tax advice'],
     milestones: [
-      { label: 'Avvio', date: '04/2026', done: true },
-      { label: 'Mappatura processi', date: '05/2026', done: true },
-      { label: 'Prototipo', date: '09/2026', done: false },
+      { label: 'Kickoff', date: '04/2026', done: true },
+      { label: 'Process mapping', date: '05/2026', done: true },
+      { label: 'Prototype', date: '09/2026', done: false },
     ],
-    documents: [{ doc: 'Charter_DocAutomation.docx', page: 1 }, { doc: 'Mappe_Processo_PTP_v2.xlsx' }],
+    documents: [{ doc: 'Charter_DocAutomation.docx', page: 1 }, { doc: 'Maps_Process_PTP_v2.xlsx' }],
     scenarioId: 'document-automation',
   },
   {
     id: 'prj-wms',
     code: 'WMS-25',
-    name: 'Revisione unità di carico',
-    status: 'in_corso',
-    owner: 'Ufficio tecnico',
-    period: 'Gen 2026 – Dic 2026',
-    objective: 'Estendere i formati pallet gestiti da WMS e LGV mantenendo invariati i tempi di ciclo.',
-    themes: ['Formati EUR / ISO', 'Parametri di presa LGV'],
-    exclusions: ['Modifiche hardware alle forche'],
+    name: 'Load unit review',
+    status: 'in_progress',
+    owner: 'Engineering department',
+    period: 'Jan 2026 – Dec 2026',
+    objective: 'Extend the pallet formats supported by WMS and LGV while maintaining current cycle times.',
+    themes: ['EUR / ISO formats', 'LGV fork handling parameters'],
+    exclusions: ['Fork hardware changes'],
     milestones: [
-      { label: 'Specifica', date: '03/2026', done: true },
-      { label: 'Validazione su impianto pilota', date: '11/2026', done: false },
+      { label: 'Specification', date: '03/2026', done: true },
+      { label: 'Validation at the pilot plant', date: '11/2026', done: false },
     ],
     documents: [{ doc: 'Specifica_Funzionale_WMS_v3.2.pdf', page: 14 }],
     scenarioId: 'pallet',
@@ -58,20 +58,20 @@ export const PROJECTS: Project[] = [
   {
     id: 'prj-lgv',
     code: 'LGV-27',
-    name: 'Manutenzione predittiva flotta LGV',
-    status: 'pianificato',
+    name: 'LGV fleet predictive maintenance',
+    status: 'planned',
     owner: 'Service',
     period: 'TBD',
-    objective: 'Anticipare i guasti della flotta a partire dai dati di telemetria.',
-    themes: ['Telemetria', 'Pianificazione interventi'],
+    objective: 'Anticipate fleet failures using telemetry data.',
+    themes: ['Telemetry', 'Maintenance scheduling'],
     exclusions: [],
-    milestones: [{ label: 'Approvazione charter', date: 'TBD', done: false }],
+    milestones: [{ label: 'Charter approval', date: 'TBD', done: false }],
     documents: [],
   },
 ]
 
 export const STATUS_LABEL: Record<ProjectStatus, string> = {
-  in_corso: 'In corso',
-  pianificato: 'Pianificato',
-  chiuso: 'Chiuso',
+  in_progress: 'In progress',
+  planned: 'Planned',
+  closed: 'Closed',
 }

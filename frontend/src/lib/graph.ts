@@ -9,7 +9,7 @@ export type GNode = {
   isRoot: boolean
   collapsible: boolean
 }
-export type GEdge = { id: string; from: string; to: string; kind: RelationKind; scope: Scope; confidence: number }
+export type GEdge = { id: string; from: string; to: string; kind: RelationKind; scope: Scope; confidence?: number }
 export type Graph = {
   nodes: GNode[]
   edges: GEdge[]
@@ -19,7 +19,7 @@ export type Graph = {
   proxy: (id: string) => string | undefined
 }
 
-const NEVER_DRAWN: EntityType[] = ['persona', 'tema', 'paese', 'vincolo']
+const NEVER_DRAWN: EntityType[] = ['topic']
 // Top-down layering: layers are rows, siblings spread horizontally (fits wide panels).
 const SLOT_W = 140
 const LAYER_H = 104
@@ -30,7 +30,7 @@ const DENSE = 7
 const DENSE_W = 92
 
 /**
- * Builds the visible graph. Default level of detail: Root → Mappe → Ruoli.
+ * Builds the visible graph. Default level of detail: Root → Maps → Roles.
  * Expanding a map reveals its activities (processes fold into the map, their code
  * stays on the activity label) and the systems they use.
  */
@@ -38,7 +38,7 @@ export function buildGraph(m: Model, expanded: Set<string>): Graph {
   const { byId, rootId } = m
 
   // A process under a map is a pass-through level, never its own node.
-  const passThrough = (e: Entity) => e.type === 'processo' && !!e.parent && byId[e.parent]?.type === 'mappa'
+  const passThrough = (e: Entity) => e.type === 'process' && !!e.parent && byId[e.parent]?.type === 'map'
   const collapsible = (e: Entity) =>
     e.id !== rootId && !passThrough(e) && m.children[e.id].length > 0
 
@@ -60,55 +60,64 @@ export function buildGraph(m: Model, expanded: Set<string>): Graph {
   }
 
   const edges = new Map<string, GEdge>()
-  const add = (from: string, to: string, kind: RelationKind, scope: Scope, confidence: number) => {
+  const add = (from: string, to: string, kind: RelationKind, scope: Scope, confidence?: number) => {
     const id = `${from}>${to}`
     const prev = edges.get(id)
     if (!prev) return void edges.set(id, { id, from, to, kind, scope, confidence })
-    prev.confidence = Math.max(prev.confidence, confidence)
-    if (scope === 'diretto') prev.scope = 'diretto'
-    if (prev.kind === 'appartiene') prev.kind = kind
+    prev.confidence = confidence === undefined ? prev.confidence : Math.max(prev.confidence ?? 0, confidence)
+    if (scope === 'direct') prev.scope = 'direct'
+    if (prev.kind === 'belongs_to') prev.kind = kind
   }
 
-  const structural = (id: string) => m.incoming[id].some((r) => r.kind === 'eseguita_da' || r.kind === 'usa_sistema')
+  const structural = (id: string) => m.incoming[id].some((r) => r.kind === 'performed_by' || r.kind === 'uses_system')
   for (const r of m.relations) {
-    if (r.kind === 'appartiene') continue
-    if (r.kind === 'usa_sistema' && !shown(r.from)) continue
+    if (r.kind === 'belongs_to') continue
+    if (r.kind === 'uses_system' && !shown(r.from)) continue
     const to = byId[r.to]
     const a = proxy(r.from)
     const b = proxy(r.to)
     if (!a || !b || a === b || !to) continue
     // Root-level summary of a role already reached through its activities
-    if (r.kind === 'impatta' && a === rootId && structural(r.to)) continue
+    if (r.kind === 'impacts' && a === rootId && structural(r.to)) continue
     // Impact on a nested entity is drawn as the hierarchy edge from its parent
-    if (r.kind === 'impatta' && to.parent && proxy(to.parent) !== a) continue
-    add(a, b, r.kind, r.scope ?? m.scope[r.from] ?? m.scope[r.to] ?? 'diretto', r.confidence)
+    if (r.kind === 'impacts' && to.parent && proxy(to.parent) !== a) continue
+    add(a, b, r.kind, r.scope ?? m.scope[r.from] ?? m.scope[r.to] ?? 'direct', r.confidence)
   }
   for (const e of Object.values(byId)) {
     if (!e.parent || !shown(e.id)) continue
     const p = proxy(e.parent)
     if (!p || p === e.id) continue
-    const imp = m.incoming[e.id].find((r) => r.kind === 'impatta')
-    add(p, e.id, 'appartiene', m.scope[e.id] ?? 'diretto', imp?.confidence ?? 1)
+    const imp = m.incoming[e.id].find((r) => r.kind === 'impacts')
+    add(p, e.id, 'belongs_to', m.scope[e.id] ?? 'direct', imp?.confidence)
   }
 
   const ids = new Set<string>([rootId])
   for (const e of edges.values()) ids.add(e.from).add(e.to)
-  for (const e of Object.values(byId)) if (e.parent === rootId && shown(e.id)) ids.add(e.id)
+  for (const e of Object.values(byId)) if (shown(e.id)) ids.add(e.id)
   const edgeList = [...edges.values()]
 
-  // Longest-path layering (the graph is a DAG by construction).
+  // Live graphs may contain cycles. Shortest-path layers stay finite and
+  // retain the original relationship directions when drawing arrows.
   const layer: Record<string, number> = {}
-  ids.forEach((id) => (layer[id] = 0))
-  for (let i = 0; i < ids.size; i++) {
-    let changed = false
-    for (const e of edgeList) {
-      if (layer[e.to] < layer[e.from] + 1) {
-        layer[e.to] = layer[e.from] + 1
-        changed = true
+  const visit = (seed: string, depth: number) => {
+    layer[seed] = depth
+    const queue = [seed]
+    for (let i = 0; i < queue.length; i++) {
+      const id = queue[i]
+      for (const edge of edgeList) {
+        const next = edge.from === id ? edge.to : edge.to === id ? edge.from : undefined
+        if (next && layer[next] === undefined) {
+          layer[next] = layer[id] + 1
+          queue.push(next)
+        }
       }
     }
-    if (!changed) break
   }
+  visit(rootId, 0)
+  // A synthetic overview has no invented edges. Lay out each real component
+  // from one of its roots, then handle components made entirely of cycles.
+  for (const id of ids) if (layer[id] === undefined && !edgeList.some((e) => e.to === id)) visit(id, 1)
+  for (const id of ids) if (layer[id] === undefined) visit(id, 1)
   const layers: string[][] = []
   ids.forEach((id) => (layers[layer[id]] ??= []).push(id))
 
@@ -130,7 +139,7 @@ export function buildGraph(m: Model, expanded: Set<string>): Graph {
   }
 
   const slot = (l: string[]) => (l.length > DENSE ? DENSE_W : SLOT_W)
-  const span = Math.max(...layers.map((l) => (l.length - 1) * slot(l)))
+  const span = Math.max(0, ...layers.map((l) => (l.length - 1) * slot(l)))
   const width = PAD_X * 2 + span
   const top: number[] = []
   let y = PAD_Y

@@ -20,12 +20,43 @@ def request(method, path, **kwargs):
     return asyncio.run(run())
 
 
-def test_home_redirects_to_documentation():
+def test_home_redirects_to_documentation(tmp_path, monkeypatch):
+    monkeypatch.setattr(api.config, "FRONTEND_DIST", tmp_path)
     response = request("GET", "/")
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
     assert request("GET", "/docs").status_code == 200
     assert request("GET", "/favicon.ico").status_code == 204
+
+
+def test_home_serves_frontend_build_when_available(tmp_path, monkeypatch):
+    (tmp_path / "index.html").write_text('<html><div id="root">Frontend</div></html>')
+    monkeypatch.setattr(api.config, "FRONTEND_DIST", tmp_path)
+    response = request("GET", "/")
+    assert response.status_code == 200
+    assert 'id="root"' in response.text
+    assert response.headers["cache-control"] == "no-cache"
+
+
+def test_prefixed_api_and_legacy_api_share_the_same_behavior(monkeypatch):
+    answer = {"answer": "Test [1].", "graph": {"nodes": [], "relationships": []}, "sources": []}
+    ask = Mock(return_value=answer)
+    monkeypatch.setattr(api, "ask", ask)
+    for path in ("/ask", "/api/ask"):
+        response = request("POST", path, json={"question": "Example question"})
+        assert response.status_code == 200
+        assert response.json() == answer
+    assert ask.call_count == 2
+
+
+def test_catalog_is_bounded_and_uses_configured_groups(monkeypatch):
+    catalog = Mock(return_value={"graph": {"nodes": [], "relationships": []}, "sources": [], "truncated": False})
+    monkeypatch.setattr(api.browse, "catalog", catalog)
+    response = request("GET", "/api/graph/catalog", params={"limit": 50})
+    assert response.status_code == 200
+    catalog.assert_called_once_with(api.config.DEFAULT_GROUPS, 50)
+    assert request("GET", "/api/graph/catalog", params={"limit": 2001}).status_code == 422
+    assert request("GET", "/api/graph/catalog", params={"limit": 0}).status_code == 422
 
 
 @pytest.mark.parametrize("error, message", [
@@ -60,7 +91,7 @@ def test_rate_limit_returns_429_after_retries(monkeypatch):
 
 
 @pytest.mark.parametrize("error, status", [
-    (llm.ConfigurationError("MISTRAL_API_KEY is required"), 503),
+    (llm.ConfigurationError("GOOGLE_API_KEY is required"), 503),
     (LLMGenerationError("private provider response"), 502),
 ])
 def test_llm_errors_have_actionable_status(monkeypatch, error, status):
@@ -90,3 +121,14 @@ def test_search_punctuation_does_not_query_database(monkeypatch):
     assert response.status_code == 200
     assert response.json() == []
     read.assert_not_called()
+
+
+def test_source_document_is_retrieved_with_acl_groups(monkeypatch):
+    document = Mock(return_value="Example charter\n\nStored excerpt")
+    monkeypatch.setattr(api.context, "document", document)
+    response = request("GET", "/api/sources/document", params={"id": "example/charter"})
+    assert response.status_code == 200
+    assert "Stored excerpt" in response.text
+    document.assert_called_once_with("example/charter", api.config.DEFAULT_GROUPS)
+    document.side_effect = LookupError("Document not found")
+    assert request("GET", "/api/sources/document", params={"id": "missing"}).status_code == 404

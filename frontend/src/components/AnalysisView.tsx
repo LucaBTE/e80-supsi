@@ -12,7 +12,7 @@ type Props = { scenario: Scenario; loading: boolean; initialSelect?: string }
 
 /** Impact analysis: Overview, entities 40% / graph 60%. Remounted on every new answer. */
 export default function AnalysisView({ scenario, loading, initialSelect }: Props) {
-  const [filter, setFilter] = useState<Filter>('tutte')
+  const [filter, setFilter] = useState<Filter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -28,7 +28,7 @@ export default function AnalysisView({ scenario, loading, initialSelect }: Props
       if (!id) return
       const toOpen: string[] = []
       for (let p = model.byId[id]?.parent; p && p !== model.rootId; p = model.byId[p]?.parent) {
-        if (model.byId[p].type === 'mappa') toOpen.push(p)
+        if (model.byId[p].type === 'map') toOpen.push(p)
       }
       if (toOpen.length) setExpanded((s) => new Set([...s, ...toOpen]))
     },

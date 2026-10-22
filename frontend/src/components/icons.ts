@@ -5,21 +5,21 @@ import {
 import type { EntityType } from '../types'
 
 export const typeIcon: Record<EntityType, LucideIcon> = {
-  progetto: FolderKanban,
-  mappa: GitBranch,
-  processo: Workflow,
-  attivita: ListChecks,
-  ruolo: Users,
-  sistema: Server,
-  persona: User,
-  esterno: Building2,
-  documento: FileText,
-  requisito: ClipboardCheck,
-  componente: Cpu,
+  project: FolderKanban,
+  map: GitBranch,
+  process: Workflow,
+  activity: ListChecks,
+  role: Users,
+  system: Server,
+  person: User,
+  external: Building2,
+  document: FileText,
+  requirement: ClipboardCheck,
+  component: Cpu,
   team: UsersRound,
-  tema: Tag,
-  paese: Globe,
-  vincolo: Ban,
+  topic: Tag,
+  country: Globe,
+  constraint: Ban,
 }
 
 /** Icon of the synthetic "Overview" root */

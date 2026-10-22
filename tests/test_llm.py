@@ -20,48 +20,43 @@ def reset_client():
 
 
 def response(content):
-    return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=content))], usage=None,
-    )
+    return SimpleNamespace(text=content, usage_metadata=None)
 
 
 @pytest.mark.parametrize("key", [None, "", "   "])
-def test_missing_mistral_key_has_clear_error(monkeypatch, key):
-    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
-    monkeypatch.setenv("GOOGLE_API_KEY", "unused-google-key")
+def test_missing_google_key_has_clear_error(monkeypatch, key):
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.setenv("MISTRAL_API_KEY", "unused-mistral-key")
     if key is not None:
-        monkeypatch.setenv("MISTRAL_API_KEY", key)
+        monkeypatch.setenv("GOOGLE_API_KEY", key)
 
-    with pytest.raises(ValueError, match="MISTRAL_API_KEY is required"):
+    with pytest.raises(ValueError, match="GOOGLE_API_KEY is required"):
         llm.client()
 
 
-def test_text_uses_mistral_model_and_system_instruction(monkeypatch):
-    monkeypatch.setenv("MISTRAL_API_KEY", "test-mistral-key")
-    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
-    monkeypatch.setattr(config, "MODEL", "custom-mistral-model")
+def test_text_uses_gemini_model_and_system_instruction(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
+    monkeypatch.setattr(config, "MODEL", "custom-gemini-model")
     client = llm.client()
     complete = Mock(return_value=response("Answer [1]."))
-    monkeypatch.setattr(client.client.chat, "complete", complete)
+    monkeypatch.setattr(client.client.models, "generate_content", complete)
 
     assert llm.text("Use only the sources.", "Question") == "Answer [1]."
     assert llm.client() is client
     kwargs = complete.call_args.kwargs
-    assert kwargs["model"] == "custom-mistral-model"
-    assert [(m["role"], m["content"]) for m in kwargs["messages"]] == [
-        ("system", "Use only the sources."), ("user", "Question"),
-    ]
+    assert kwargs["model"] == "custom-gemini-model"
+    assert kwargs["config"].system_instruction == "Use only the sources."
+    assert kwargs["contents"][0].parts[0].text == "Question"
 
 
-def test_extraction_uses_async_mistral_and_preserves_project_code(monkeypatch):
-    monkeypatch.setenv("MISTRAL_API_KEY", "test-mistral-key")
-    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+def test_extraction_uses_async_gemini_and_preserves_project_code(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
     client = llm.client()
     complete = AsyncMock(return_value=response(
         '{"nodes": [{"id": "0", "label": "Project", '
         '"properties": {"name": "Demo", "code": "173"}}], "relationships": []}'
     ))
-    monkeypatch.setattr(client.client.chat, "complete_async", complete)
+    monkeypatch.setattr(client.client.aio.models, "generate_content", complete)
 
     graph = asyncio.run(extract.build(
         classify("Projects/Demo/notes.md"), [Chunk("Project Demo, code 173.", "body")], Catalog([]), True,
@@ -76,7 +71,7 @@ def test_extraction_uses_async_mistral_and_preserves_project_code(monkeypatch):
 
 
 def test_no_llm_ingestion_does_not_need_api_key(monkeypatch):
-    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
 
     graph = asyncio.run(extract.build(
         classify("Projects/Demo/notes.md"), [Chunk("Example", "body")], Catalog([]), False,
@@ -86,9 +81,9 @@ def test_no_llm_ingestion_does_not_need_api_key(monkeypatch):
 
 
 def test_malformed_extraction_is_not_treated_as_success(monkeypatch):
-    monkeypatch.setenv("MISTRAL_API_KEY", "test-mistral-key")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-google-key")
     complete = AsyncMock(return_value=response('{"nodes": "invalid"}'))
-    monkeypatch.setattr(llm.client().client.chat, "complete_async", complete)
+    monkeypatch.setattr(llm.client().client.aio.models, "generate_content", complete)
 
     with pytest.raises(LLMGenerationError):
         asyncio.run(extract.build(

@@ -1,10 +1,11 @@
 """Source excerpts behind an answer, filtered by the caller's ACL groups."""
 
 import re
+from urllib.parse import urlencode
 
 from .. import db
 
-_FIELDS = "c.id AS chunk, d.title AS document, d.path AS path, c.loc AS loc, c.text AS text"
+_FIELDS = "c.id AS chunk, d.id AS document_id, d.title AS document, d.path AS path, c.loc AS loc, c.text AS text"
 
 
 def gather(question: str, node_ids, groups: list[str], limit: int = 12) -> list[dict]:
@@ -18,8 +19,9 @@ def gather(question: str, node_ids, groups: list[str], limit: int = 12) -> list[
             f"""
             MATCH (n)-[:FROM_CHUNK]->(c:Chunk)-[:FROM_DOCUMENT]->(d:Document)
             WHERE elementId(n) IN $ids AND d.acl IN $groups
-            WITH d, c, count(n) AS hits ORDER BY hits DESC LIMIT $limit
-            RETURN {_FIELDS}
+            WITH d, c, count(n) AS hits, collect(DISTINCT elementId(n)) AS entities
+            ORDER BY hits DESC LIMIT $limit
+            RETURN {_FIELDS}, entities
             """,
             ids=list(node_ids), groups=groups, limit=limit,
         )
@@ -40,7 +42,10 @@ def gather(question: str, node_ids, groups: list[str], limit: int = 12) -> list[
     for row in rows:
         if row["chunk"] not in seen and len(sources) < limit:
             seen.add(row["chunk"])
-            sources.append({"n": len(sources) + 1, **row})
+            source = {"n": len(sources) + 1, **row}
+            if row.get("document_id"):
+                source["url"] = "/api/sources/document?" + urlencode({"id": row["document_id"]})
+            sources.append(source)
     return sources
 
 
@@ -53,3 +58,19 @@ def render(sources: list[dict]) -> str:
 def _terms(question: str) -> str:
     # Lowercase plain words only: no Lucene operators or special characters.
     return " ".join(re.findall(r"\w{3,}", question.lower())[:20])
+
+
+def document(doc_id: str, groups: list[str]) -> str:
+    rows = db.read(
+        """
+        MATCH (d:Document {id: $id}) WHERE d.acl IN $groups
+        OPTIONAL MATCH (c:Chunk)-[:FROM_DOCUMENT]->(d)
+        WITH d, c ORDER BY c.index
+        RETURN d.title AS title, d.path AS path,
+               collect(CASE WHEN c IS NOT NULL THEN c.loc + $separator + c.text END) AS sections
+        """, id=doc_id, groups=groups, separator="\n",
+    )
+    if not rows:
+        raise LookupError("Document not found")
+    row = rows[0]
+    return "\n\n".join([row["title"], row["path"], *row["sections"]])

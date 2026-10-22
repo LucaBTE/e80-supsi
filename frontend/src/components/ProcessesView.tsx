@@ -3,15 +3,17 @@ import { ArrowRight, GitBranch, TriangleAlert } from 'lucide-react'
 import { processCatalog, type ProcessEntry } from '../lib/catalog'
 import { ChangeTag, GapStrip } from './badges'
 import Panel from './Panel'
+import type { Project, Scenario } from '../types'
 
 type Props = {
+  catalog: Scenario
+  projects: Project[]
   query: string
   selectedKey: string | null
   onSelect: (key: string) => void
   onOpenAnalysis: (scenarioId: string, entityId: string) => void
 }
 
-const CATALOG = processCatalog()
 
 const matches = (p: ProcessEntry, q: string) =>
   !q ||
@@ -19,11 +21,12 @@ const matches = (p: ProcessEntry, q: string) =>
     .filter(Boolean)
     .some((s) => s!.toLowerCase().includes(q))
 
-export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnalysis }: Props) {
+export default function ProcessesView({ catalog, projects, query, selectedKey, onSelect, onOpenAnalysis }: Props) {
+  const CATALOG = useMemo(() => processCatalog(catalog, projects), [catalog, projects])
   const q = query.trim().toLowerCase()
   const groups = useMemo(
     () => CATALOG.map((g) => ({ ...g, processes: g.processes.filter((p) => matches(p, q)) })).filter((g) => g.processes.length),
-    [q],
+    [q, CATALOG],
   )
   const visible = groups.flatMap((g) => g.processes)
   const total = visible.length
@@ -32,8 +35,8 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
-      <Panel title="Mappe e processi" meta={total} className="max-h-[75vh] lg:max-h-none">
-        {total === 0 && <p className="px-5 py-6 text-sm text-e80-gray">Nessun processo corrisponde alla ricerca.</p>}
+      <Panel title="Maps and processes" meta={total} className="max-h-[75vh] lg:max-h-none">
+        {total === 0 && <p className="px-5 py-6 text-sm text-e80-gray">No processes match your search.</p>}
         {groups.map((g) => (
           <div key={g.key} className="border-b border-line last:border-b-0">
             <p className="flex items-center gap-2 bg-surface px-4 py-2 text-xs font-bold uppercase tracking-eyebrow">
@@ -60,8 +63,8 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                           {p.label}
                         </span>
                         <span className="text-xs text-e80-gray">
-                          {p.activities.length ? `${p.activities.length} attività` : 'Attività non mappate'} ·{' '}
-                          {p.impacts.length ? `${p.impacts.length} impatti di progetto` : 'nessun impatto'}
+                          {p.activities.length ? `${p.activities.length} activities` : 'Activities not mapped'} ·{' '}
+                          {p.impacts.length ? `${p.impacts.length} project impacts` : 'no impacts'}
                         </span>
                       </span>
                       {p.gaps.length > 0 && (
@@ -78,13 +81,13 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
         ))}
       </Panel>
 
-      <Panel title="Dettaglio processo" className="min-h-[420px] lg:min-h-0">
+      <Panel title="Process details" className="min-h-[420px] lg:min-h-0">
         {!selected ? (
-          <p className="p-6 text-sm text-e80-gray">Selezionare un processo.</p>
+          <p className="p-6 text-sm text-e80-gray">Select a process.</p>
         ) : (
           <div key={selected.key} className="fade-in space-y-5 px-5 py-4">
             <div>
-              <p className="e80-eyebrow">Processo</p>
+              <p className="e80-eyebrow">Process</p>
               <h3 className="text-xl font-bold">
                 {selected.code ? `${selected.code} · ` : ''}
                 {selected.label}
@@ -94,7 +97,7 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <h4 className="e80-eyebrow mb-1.5">Ruoli esecutori</h4>
+                <h4 className="e80-eyebrow mb-1.5">Performing roles</h4>
                 {selected.roles.length ? (
                   <div className="flex flex-wrap gap-1.5">
                     {selected.roles.map((r) => (
@@ -102,11 +105,11 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-e80-gray">Owner mancante (TBD).</p>
+                  <p className="text-sm text-e80-gray">Owner not specified (TBD).</p>
                 )}
               </div>
               <div>
-                <h4 className="e80-eyebrow mb-1.5">Impattato da</h4>
+                <h4 className="e80-eyebrow mb-1.5">Affected by</h4>
                 {selected.impacts.length ? (
                   <ul className="space-y-1.5">
                     {selected.impacts.map((i, k) => (
@@ -116,9 +119,9 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                           onClick={() => onOpenAnalysis(selected.scenarioId, selected.entityId)}
                           className="group flex items-center gap-2 text-left text-sm hover:underline hover:decoration-accent-4"
                         >
-                          <span className="font-semibold">{i.project ? `${i.project.code} · ${i.project.name}` : 'Analisi di requisito'}</span>
+                          <span className="font-semibold">{i.project ? `${i.project.code} · ${i.project.name}` : 'Requirement analysis'}</span>
                           <span className="text-e80-gray">
-                            {i.scope ?? 'n/d'} · {Math.round(i.confidence * 100)}%
+                            {i.scope ?? 'n/a'} · {i.confidence === undefined ? 'confidence n/a' : `${Math.round(i.confidence * 100)}%`}
                           </span>
                           <ArrowRight size={14} aria-hidden />
                         </button>
@@ -126,21 +129,21 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-e80-gray">Nessun progetto attivo sul processo.</p>
+                  <p className="text-sm text-e80-gray">No project impact is recorded in this result.</p>
                 )}
               </div>
             </div>
 
             <div>
-              <h4 className="e80-eyebrow mb-1.5">Attività</h4>
+              <h4 className="e80-eyebrow mb-1.5">Activity</h4>
               {selected.activities.length === 0 ? (
-                <p className="text-sm text-e80-gray">Attività non ancora mappate (TBD).</p>
+                <p className="text-sm text-e80-gray">Activities have not been mapped yet (TBD).</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[560px] border-collapse text-sm">
                     <thead>
                       <tr className="bg-e80-black text-left text-white">
-                        {['Attività', 'Ruolo', 'Sistema', 'Tipo', 'Conf.'].map((c) => (
+                        {['Activity', 'Role', 'System', 'Type', 'Conf.'].map((c) => (
                           <th key={c} scope="col" className="px-3 py-2 text-[11px] font-bold uppercase tracking-eyebrow">{c}</th>
                         ))}
                       </tr>
@@ -157,7 +160,7 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                           <td className="px-3 py-2">{a.roles.join(', ') || 'TBD'}</td>
                           <td className="px-3 py-2">{a.systems.join(', ') || <span className="italic">TBD</span>}</td>
                           <td className="px-3 py-2">{a.change && <ChangeTag change={a.change} />}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{a.confidence !== undefined ? `${Math.round(a.confidence * 100)}%` : 'n/d'}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{a.confidence !== undefined ? `${Math.round(a.confidence * 100)}%` : 'n/a'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -176,7 +179,7 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
             )}
 
             <div>
-              <h4 className="e80-eyebrow mb-1.5">Fonti</h4>
+              <h4 className="e80-eyebrow mb-1.5">Sources</h4>
               {selected.sources.length ? (
                 <ul className="space-y-1 text-sm">
                   {selected.sources.map((c, i) => (
@@ -188,7 +191,7 @@ export default function ProcessesView({ query, selectedKey, onSelect, onOpenAnal
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-e80-gray">Fonte mancante (TBD).</p>
+                <p className="text-sm text-e80-gray">Source not available (TBD).</p>
               )}
             </div>
           </div>

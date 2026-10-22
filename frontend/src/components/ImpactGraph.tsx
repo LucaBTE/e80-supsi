@@ -4,22 +4,23 @@ import { GAP_SHORT } from '../lib/gaps'
 import { pathToRoot, type GEdge, type Graph } from '../lib/graph'
 import { matchesFilter, TYPE_LABEL, type Filter, type Model } from '../lib/model'
 import { RootIcon, typeIcon } from './icons'
+import GraphViewport from './GraphViewport'
 
 const C = { black: '#2D2926', gray: '#666666', soft: '#9A9A9A', accent: '#FFDC73', strong: '#F0AF10' }
 
 const trunc = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 
 function edgeStyle(e: GEdge, hl: boolean) {
-  const source = e.kind === 'fonte'
+  const source = e.kind === 'source'
   return {
     stroke: hl ? C.strong : source ? C.soft : C.black,
-    strokeWidth: source ? 1.2 : 0.8 + e.confidence * 2.4,
-    strokeDasharray: source ? '3 3' : e.scope === 'indiretto' ? '9 5' : undefined,
+    strokeWidth: source ? 1.2 : 0.8 + (e.confidence ?? 0.5) * 2.4,
+    strokeDasharray: source ? '3 3' : e.scope === 'indirect' ? '9 5' : undefined,
     marker: source ? undefined : hl ? 'url(#g-arrow-hl)' : 'url(#g-arrow)',
   }
 }
 
-type CanvasProps = {
+export type CanvasProps = {
   model: Model
   graph: Graph
   filter: Filter
@@ -46,7 +47,7 @@ export function GraphCanvas({ model, graph, filter, selectedId, hoverId, expande
       preserveAspectRatio="xMidYMid meet"
       className="h-full w-full select-none"
       role="group"
-      aria-label="Grafo"
+      aria-label="Graph"
     >
       <defs>
         {[['g-arrow', C.black], ['g-arrow-hl', C.strong]].map(([id, fill]) => (
@@ -87,12 +88,12 @@ export function GraphCanvas({ model, graph, filter, selectedId, hoverId, expande
         const r = n.isRoot ? 26 : 19
         const active = selected === n.id
         const gaps = model.gapsByEntity[n.id] ?? []
-        const indirect = model.scope[n.id] === 'indiretto'
+        const indirect = model.scope[n.id] === 'indirect'
         const faded = (path && !path.nodes.has(n.id)) || !passes(n.id)
         const line1 = e.code ?? e.label
         const line2 = e.code ? e.label : undefined
         const open = expanded.has(n.id)
-        const name = `${TYPE_LABEL[e.type]} ${e.code ?? ''} ${e.label}${gaps.length ? `, gap: ${gaps.map((g) => g.message).join('; ')}` : ''}${n.collapsible ? (open ? ', espansa' : ', comprimibile: premere per espandere') : ''}`
+        const name = `${TYPE_LABEL[e.type]} ${e.code ?? ''} ${e.label}${gaps.length ? `, gap: ${gaps.map((g) => g.message).join('; ')}` : ''}${n.collapsible ? (open ? ', expanded' : ', collapsible: press to expand') : ''}`
         return (
           <g
             key={n.id}
@@ -170,16 +171,16 @@ export function Legend() {
   )
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-e80-gray">
-      <span className="flex items-center gap-2">{line()} Diretto</span>
-      <span className="flex items-center gap-2">{line('9 5')} Indiretto</span>
-      <span className="flex items-center gap-2">{line('3 3', C.soft, 1.4)} Fonte</span>
+      <span className="flex items-center gap-2">{line()} Direct</span>
+      <span className="flex items-center gap-2">{line('9 5')} Indirect</span>
+      <span className="flex items-center gap-2">{line('3 3', C.soft, 1.4)} Source</span>
       <span className="flex items-center gap-2">
         <svg width="16" height="16" aria-hidden>
           <circle cx="8" cy="8" r="6.5" fill="#fff" stroke={C.strong} strokeWidth="2" strokeDasharray="3 2" />
         </svg>
         <TriangleAlert size={13} aria-hidden /> Gap
       </span>
-      <span className="text-e80-gray/80">Spessore = confidenza · clic su una mappa per aprirne le attività</span>
+      <span className="text-e80-gray/80">Line width reflects confidence when available · click a map to expand its activities</span>
     </div>
   )
 }
@@ -191,19 +192,19 @@ export default function ImpactGraph({ onExpand, ...canvas }: Props) {
     <section className="flex min-h-[420px] flex-col border border-line bg-white lg:h-full lg:min-h-0">
       <header className="flex items-center gap-3 border-b border-line px-5 py-3">
         <span className="h-5 w-[9px] bg-accent" aria-hidden />
-        <h2 className="e80-panel-title">Grafo</h2>
+        <h2 className="e80-panel-title">Graph</h2>
         <button
           type="button"
           onClick={onExpand}
           className="ml-2 flex items-center gap-2 border border-line px-3 py-1.5 text-xs font-bold uppercase tracking-eyebrow transition-colors hover:border-e80-black hover:bg-accent"
         >
           <Maximize2 size={14} strokeWidth={1.8} aria-hidden />
-          Espandi
+          Expand
         </button>
         {/* Kept left of centre: the detail drawer slides over the right edge */}
       </header>
       <div className="min-h-0 flex-1 bg-[radial-gradient(#E0E0E0_1px,transparent_1px)] [background-size:18px_18px] p-3">
-        <GraphCanvas {...canvas} />
+        <GraphViewport {...canvas} />
       </div>
       <footer className="border-t border-line px-5 py-2.5">
         <Legend />

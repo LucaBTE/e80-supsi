@@ -10,48 +10,48 @@ export function computeGaps(entities: Entity[], relations: Relation[]): Gap[] {
   for (const e of entities) {
     if (e.parent) children.set(e.parent, [...(children.get(e.parent) ?? []), e.id])
   }
-  const impacted = new Set(relations.filter((r) => r.kind === 'impatta').map((r) => r.to))
+  const impacted = new Set(relations.filter((r) => r.kind === 'impacts').map((r) => r.to))
   const gaps: Gap[] = []
 
   // 1. Role performing an impacted activity but declared outside the charter
   const roles = new Set(
-    relations.filter((r) => r.kind === 'eseguita_da' && impacted.has(r.from)).map((r) => r.to),
+    relations.filter((r) => r.kind === 'performed_by' && impacted.has(r.from)).map((r) => r.to),
   )
   for (const roleId of roles) {
     if (relations.some((r) => r.to === roleId && r.inCharter === false)) {
       gaps.push({
         id: `charter:${roleId}`,
-        kind: 'fuori_charter',
+        kind: 'outside_charter',
         entityId: roleId,
-        message: 'Non presente nel charter',
-        severity: 'alta',
+        message: 'Not listed in the charter',
+        severity: 'high',
       })
     }
   }
 
   // 2. Activity whose system is unconfirmed or missing
   for (const e of entities) {
-    if (e.type !== 'attivita') continue
-    const toVerify = relations.some((r) => r.to === e.id && r.change === 'da_verificare')
-    const noSystem = !relations.some((r) => r.from === e.id && r.kind === 'usa_sistema')
+    if (e.type !== 'activity') continue
+    const toVerify = relations.some((r) => r.to === e.id && r.change === 'needs_review')
+    const noSystem = !relations.some((r) => r.from === e.id && r.kind === 'uses_system')
     if (toVerify || noSystem) {
       gaps.push({
         id: `system:${e.id}`,
-        kind: 'sistema_da_verificare',
+        kind: 'system_needs_review',
         entityId: e.id,
-        message: noSystem ? 'Sistema da verificare · nessun sistema associato' : 'Sistema da verificare',
-        severity: 'media',
+        message: noSystem ? 'System needs review · no linked system' : 'System needs review',
+        severity: 'medium',
       })
     }
   }
 
   // 3. Process with no performing role on itself or any descendant
   const hasOwner = (id: string): boolean =>
-    relations.some((r) => r.from === id && r.kind === 'eseguita_da') ||
+    relations.some((r) => r.from === id && r.kind === 'performed_by') ||
     (children.get(id) ?? []).some(hasOwner)
   for (const e of entities) {
-    if (e.type === 'processo' && !hasOwner(e.id)) {
-      gaps.push({ id: `owner:${e.id}`, kind: 'owner_mancante', entityId: e.id, message: 'Owner mancante', severity: 'alta' })
+    if (e.type === 'process' && !hasOwner(e.id)) {
+      gaps.push({ id: `owner:${e.id}`, kind: 'missing_owner', entityId: e.id, message: 'Owner not specified', severity: 'high' })
     }
   }
 
@@ -59,12 +59,13 @@ export function computeGaps(entities: Entity[], relations: Relation[]): Gap[] {
   for (const r of relations) {
     if (r.sources.length > 0) continue
     const from = byId.get(r.from)
+    if (from?.type === 'document' && byId.get(r.to)?.type === 'document') continue
     gaps.push({
       id: `source:${r.kind}:${r.from}>${r.to}`,
-      kind: 'fonte_mancante',
+      kind: 'missing_source',
       entityId: r.to,
-      message: `Fonte mancante (TBD) · relazione da ${from?.code ?? from?.label ?? r.from}`,
-      severity: 'media',
+      message: `Source not available (TBD) · relationship from ${from?.code ?? from?.label ?? r.from}`,
+      severity: 'medium',
     })
   }
 
@@ -72,8 +73,8 @@ export function computeGaps(entities: Entity[], relations: Relation[]): Gap[] {
 }
 
 export const GAP_SHORT: Record<Gap['kind'], string> = {
-  fuori_charter: 'non nel charter',
-  sistema_da_verificare: 'sistema da verificare',
-  owner_mancante: 'owner mancante',
-  fonte_mancante: 'fonte TBD',
+  outside_charter: 'not in charter',
+  system_needs_review: 'system needs review',
+  missing_owner: 'owner not specified',
+  missing_source: 'source TBD',
 }

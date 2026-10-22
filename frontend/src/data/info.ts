@@ -14,30 +14,30 @@ export type InfoAnswer = {
 export const INFO_ANSWERS: InfoAnswer[] = [
   {
     id: 'info-da-systems',
-    label: 'Perimetro tecnico · Document Automation',
-    query: 'Quali sistemi rientrano nel perimetro di Document Automation?',
-    keywords: ['sistem', 'perimetro', 'document', 'erp', 'sap'],
+    label: 'Technical scope · Document Automation',
+    query: 'Which systems are within the scope of Document Automation?',
+    keywords: ['system', 'scope', 'document', 'erp', 'sap'],
     confidence: 0.88,
     sentences: [
-      { text: 'Il gestionale di riferimento è l’ERP aziendale, con cui la soluzione deve integrarsi senza duplicare le anagrafiche.', cites: [1] },
-      { text: 'Per l’acquisizione dei documenti si valutano riconoscimento ottico e una piattaforma di document intelligence; l’uso di automazioni RPA è previsto solo come supporto.', cites: [1, 2] },
-      { text: 'Il canale di ricezione delle fatture elettroniche non è ancora definito.', cites: [3] },
+      { text: 'The solution must integrate with the corporate ERP without duplicating master data.', cites: [1] },
+      { text: 'OCR and a document intelligence platform are being evaluated for document capture; RPA is planned only as a supporting tool.', cites: [1, 2] },
+      { text: 'The channel for receiving electronic invoices has not yet been defined.', cites: [3] },
     ],
     citations: [
-      { doc: 'Charter_DocAutomation.docx', page: 2, passage: 'La soluzione si integra con l’ERP esistente.', path: 'SharePoint › Progetti › Document Automation' },
-      { doc: 'Charter_DocAutomation.docx', page: 3, passage: 'Tecnologie in valutazione: OCR, document intelligence, RPA di supporto.', path: 'SharePoint › Progetti › Document Automation' },
-      { doc: 'Verbale_Kickoff_DA.pdf', page: 3, passage: 'Il canale SDI resta da approfondire con IT.', path: 'SharePoint › Progetti › Document Automation › Verbali' },
+      { doc: 'Charter_DocAutomation.docx', page: 2, passage: 'La soluzione si integra con l’ERP esistente.', path: 'SharePoint › Projects › Document Automation' },
+      { doc: 'Charter_DocAutomation.docx', page: 3, passage: 'Tecnologie in valutazione: OCR, document intelligence, RPA di supporto.', path: 'SharePoint › Projects › Document Automation' },
+      { doc: 'Verbale_Kickoff_DA.pdf', page: 3, passage: 'Il canale SDI resta da approfondire con IT.', path: 'SharePoint › Projects › Document Automation › Verbali' },
     ],
   },
   {
     id: 'info-pallet',
-    label: 'Specifica · Formati pallet',
-    query: 'Quali formati pallet gestisce il WMS?',
-    keywords: ['pallet', 'formati', 'wms', 'eur', 'iso'],
+    label: 'Specification · Pallet formats',
+    query: 'Which pallet formats does the WMS support?',
+    keywords: ['pallet', 'format', 'wms', 'eur', 'iso'],
     confidence: 0.93,
     sentences: [
-      { text: 'Il WMS gestisce i formati EUR e ISO, con tolleranze di ingombro definite per ciascun formato.', cites: [1] },
-      { text: 'Le dimensioni nominali del pallet sono un parametro di configurazione letto anche dal controllo missione LGV.', cites: [1, 2] },
+      { text: 'The WMS supports EUR and ISO formats, with dimensional tolerances defined for each format.', cites: [1] },
+      { text: 'Nominal pallet dimensions are a configuration parameter also read by LGV mission control.', cites: [1, 2] },
     ],
     citations: [
       { doc: 'Specifica_Funzionale_WMS_v3.2.pdf', page: 14, passage: 'Il sistema gestisce i formati pallet EUR e ISO.', path: 'Documentazione tecnica › WMS' },
@@ -46,16 +46,16 @@ export const INFO_ANSWERS: InfoAnswer[] = [
   },
   {
     id: 'info-da-exclusions',
-    label: 'Esclusioni · Document Automation',
-    query: 'Cosa è escluso dal design sprint di Document Automation?',
-    keywords: ['escluso', 'esclusion', 'fuori', 'sprint'],
+    label: 'Exclusions · Document Automation',
+    query: 'What is excluded from the Document Automation design sprint?',
+    keywords: ['excluded', 'exclusion', 'out of scope', 'sprint'],
     confidence: 0.9,
     sentences: [
-      { text: 'Lo sprint si ferma al prototipo: sviluppo, messa in produzione e automazioni su ambienti reali sono fuori perimetro.', cites: [1] },
-      { text: 'Non è prevista consulenza legale o fiscale.', cites: [1] },
+      { text: 'The sprint ends with the prototype: development, deployment and automation in live environments are out of scope.', cites: [1] },
+      { text: 'Legal and tax advice is not included.', cites: [1] },
     ],
     citations: [
-      { doc: 'Charter_DocAutomation.docx', page: 3, passage: 'Esclusi: sviluppo, go-live, automazioni in produzione, consulenza legale e fiscale.', path: 'SharePoint › Progetti › Document Automation' },
+      { doc: 'Charter_DocAutomation.docx', page: 3, passage: 'Esclusi: sviluppo, go-live, automazioni in produzione, consulenza legale e fiscale.', path: 'SharePoint › Projects › Document Automation' },
     ],
   },
 ]

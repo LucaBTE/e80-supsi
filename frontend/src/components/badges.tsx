@@ -4,9 +4,9 @@ import type { Change, Gap, Level } from '../types'
 const tag = 'inline-flex items-center whitespace-nowrap px-1.5 py-px text-[10px] font-bold uppercase leading-4 tracking-eyebrow'
 
 const CHANGE: Record<Change, [string, string]> = {
-  automatizzata: ['Automatizzata', 'bg-e80-black text-white border border-e80-black'],
-  modificata: ['Modificata', 'border border-e80-black'],
-  da_verificare: ['Da verificare', 'border border-dashed border-e80-black'],
+  automated: ['Automated', 'bg-e80-black text-white border border-e80-black'],
+  changed: ['Changed', 'border border-e80-black'],
+  needs_review: ['Needs review', 'border border-dashed border-e80-black'],
 }
 export function ChangeTag({ change }: { change: Change }) {
   const [label, cls] = CHANGE[change]
@@ -14,12 +14,12 @@ export function ChangeTag({ change }: { change: Change }) {
 }
 
 const LEVEL: Record<Level, string> = {
-  alta: 'bg-e80-black text-white border border-e80-black',
-  media: 'bg-accent border border-accent',
-  bassa: 'border border-e80-black',
+  high: 'bg-e80-black text-white border border-e80-black',
+  medium: 'bg-accent border border-accent',
+  low: 'border border-e80-black',
 }
 export function LevelBadge({ level }: { level: Level }) {
-  return <span className={`${tag} ${LEVEL[level]}`}>Impatto {level}</span>
+  return <span className={`${tag} ${LEVEL[level]}`}>Impact {level}</span>
 }
 
 export function TypeTag({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,7 @@ export function CiteChip({ n, active, label, onClick }: { n: number; active?: bo
       type="button"
       onClick={onClick}
       title={label}
-      aria-label={`Fonte ${n}${label ? `: ${label}` : ''}`}
+      aria-label={`Source ${n}${label ? `: ${label}` : ''}`}
       className={`mx-0.5 inline-block border px-1.5 align-middle text-[11px] font-bold leading-4 transition-colors ${
         active ? 'border-e80-black bg-accent' : 'border-line bg-white text-e80-gray hover:border-accent-4 hover:text-e80-black'
       }`}

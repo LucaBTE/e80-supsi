@@ -17,6 +17,7 @@ DOC_TYPES = {
 
 SYSTEM = """You write IT documentation for E80 Group from a knowledge graph and numbered source excerpts.
 - Write Markdown with the requested sections, in the requested language.
+- Preserve source entity names, codes, document titles and verbatim quotations in their original language.
 - Use only facts from the context. Cite excerpts with [n] right after the sentence they support.
 - Where the context has no information for a section, say what is missing instead of inventing it."""
 
@@ -37,7 +38,7 @@ def neighbourhood(label: str, key: str) -> db.GraphResult:
     )
 
 
-def generate(doc_type: str, label: str, key: str, groups: list[str], language: str = "Italian") -> dict:
+def generate(doc_type: str, label: str, key: str, groups: list[str], language: str = "English") -> dict:
     result = neighbourhood(label, key)
     if not result.rows:
         raise LookupError(f"{label} {key!r} not found")

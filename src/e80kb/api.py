@@ -6,17 +6,20 @@ No login yet: every request reads with config.DEFAULT_GROUPS.
 import re
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from neo4j.exceptions import AuthError, ServiceUnavailable, SessionExpired
 from neo4j_graphrag.exceptions import LLMGenerationError, RateLimitError
 from pydantic import BaseModel, ConfigDict, Field
 from tenacity import RetryError
 
-from . import config, db, docgen, llm, schema
+from . import browse, config, db, docgen, llm, schema
 from .retrieval.ask import ask
+from .retrieval import context
 
 app = FastAPI(title="E80 Knowledge API")
+router = APIRouter()
 
 DomainLabel = Literal[schema.DOMAIN_LABELS]
 
@@ -33,11 +36,14 @@ class DocRequest(RequestModel):
     type: Literal[tuple(docgen.DOC_TYPES)]
     label: DomainLabel
     key: str = Field(min_length=1, max_length=300)
-    language: Literal["Italian", "English"] = "Italian"
+    language: Literal["Italian", "English"] = "English"
 
 
 @app.get("/", include_in_schema=False)
-def home() -> RedirectResponse:
+def home():
+    index = config.FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(index, headers={"Cache-Control": "no-cache"})
     return RedirectResponse("/docs")
 
 
@@ -74,25 +80,30 @@ async def llm_error(request, exc) -> JSONResponse:
         exc = exc.last_attempt.exception()
     if isinstance(exc, RateLimitError):
         return JSONResponse(status_code=429, headers={"Retry-After": "60"}, content={
-            "detail": "Mistral rate limit reached. Wait before retrying and check your API quota.",
+            "detail": "Gemini rate limit reached. Wait before retrying and check your API quota.",
         })
     return JSONResponse(status_code=502, content={
-        "detail": "Mistral could not generate a response. Check the API key, model and service availability.",
+        "detail": "Gemini could not generate a response. Check the API key, model and service availability.",
     })
 
 
-@app.get("/health")
+@router.get("/health")
 def health() -> dict:
     db.driver().verify_connectivity()
     return {"status": "ok"}
 
 
-@app.post("/ask")
+@router.post("/ask")
 def ask_endpoint(request: AskRequest) -> dict:
     return ask(request.question, config.DEFAULT_GROUPS)
 
 
-@app.get("/graph/search")
+@router.get("/graph/catalog")
+def catalog(limit: int = Query(1000, ge=1, le=2000)) -> dict:
+    return browse.catalog(config.DEFAULT_GROUPS, limit)
+
+
+@router.get("/graph/search")
 def search(q: str = Query(min_length=2, max_length=200), limit: int = Query(20, ge=1, le=100)) -> list[dict]:
     """Entities whose name, code or id matches the words of `q` (prefix match)."""
     terms = " ".join(f"{word}*" for word in re.findall(r"\w+", q.lower())[:10])
@@ -117,7 +128,7 @@ def search(q: str = Query(min_length=2, max_length=200), limit: int = Query(20, 
     ]
 
 
-@app.get("/graph/node")
+@router.get("/graph/node")
 def node(label: DomainLabel, key: str = Query(min_length=1, max_length=300)) -> dict:
     """One entity with its direct neighbours in the domain graph."""
     result = db.read_graph(
@@ -133,9 +144,25 @@ def node(label: DomainLabel, key: str = Query(min_length=1, max_length=300)) -> 
     return result.graph()
 
 
-@app.post("/documents")
+@router.post("/documents")
 def generate_doc(request: DocRequest) -> dict:
     try:
         return docgen.generate(request.type, request.label, request.key, config.DEFAULT_GROUPS, request.language)
     except LookupError as e:
         raise HTTPException(404, str(e))
+
+
+@router.get("/sources/document", response_class=PlainTextResponse)
+def source_document(id: str = Query(min_length=1, max_length=2000)) -> PlainTextResponse:
+    try:
+        return PlainTextResponse(context.document(id, config.DEFAULT_GROUPS))
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+# Keep the original API URLs for existing clients. The browser uses /api so
+# frontend assets and backend endpoints share one origin in both run modes.
+app.include_router(router, prefix="/api")
+app.include_router(router, include_in_schema=False)
+if (config.FRONTEND_DIST / "assets").is_dir():
+    app.mount("/assets", StaticFiles(directory=config.FRONTEND_DIST / "assets"), name="assets")

@@ -4,9 +4,9 @@ import { matchesFilter, type Filter, type Model, type TreeNode } from '../lib/mo
 import EntityCard from './EntityCard'
 
 export const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'tutte', label: 'Tutte' },
-  { key: 'dirette', label: 'Dirette' },
-  { key: 'indirette', label: 'Indirette' },
+  { key: 'all', label: 'All' },
+  { key: 'direct', label: 'Direct' },
+  { key: 'indirect', label: 'Indirect' },
   { key: 'gap', label: 'Gap' },
 ]
 
@@ -66,11 +66,11 @@ export default function EntityList({ model, filter, onFilter, selectedId, onSele
     <section className="flex max-h-[75vh] min-h-0 flex-col border border-line bg-white lg:max-h-none">
       <header className="flex items-center gap-3 border-b border-line px-5 py-3">
         <span className="h-5 w-[9px] bg-accent" aria-hidden />
-        <h2 className="e80-panel-title">Entità e fonti</h2>
+        <h2 className="e80-panel-title">Entities and sources</h2>
         <span className="ml-auto e80-eyebrow" aria-live="polite">{total}</span>
       </header>
 
-      <div role="tablist" aria-label="Filtro impatti" className="flex border-b border-line px-3">
+      <div role="tablist" aria-label="Impact filter" className="flex border-b border-line px-3">
         {FILTERS.map((f, i) => {
           const on = filter === f.key
           return (
@@ -95,7 +95,7 @@ export default function EntityList({ model, filter, onFilter, selectedId, onSele
       </div>
 
       <div ref={scrollRef} id="entity-panel" role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
-        {total === 0 && <p className="px-5 py-6 text-sm text-e80-gray">Nessuna voce per questo filtro.</p>}
+        {total === 0 && <p className="px-5 py-6 text-sm text-e80-gray">No items match this filter.</p>}
         {model.groups.map((g) => {
           const n = count(g.nodes)
           if (!n) return null
