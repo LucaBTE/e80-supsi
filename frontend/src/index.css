@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap');
+@import "tailwindcss";
+
+/* E80 Group tokens (see E80-Design-System-for-Web.md) exposed as Tailwind utilities:
+   bg-e80-black, text-e80-gray, border-line, bg-accent, ... */
+@theme {
+  --color-e80-black: #2D2926;
+  --color-e80-gray: #666666;
+  --color-line: #E0E0E0;
+  --color-surface: #F5F5F5;
+  --color-accent: #FFDC73;
+  --color-accent-2: #FDD155;
+  --color-accent-3: #F9C233;
+  --color-accent-4: #F0AF10;
+  --color-gap: #FFF6D6;
+
+  --font-sans: "Segoe UI", "Open Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --tracking-title: 0.04em;
+  --tracking-eyebrow: 0.14em;
+  --tracking-footer: 0.22em;
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-white font-sans text-e80-black antialiased;
+    line-height: 1.35;
+  }
+  a {
+    color: var(--color-e80-black);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent-3);
+    text-underline-offset: 3px;
+  }
+  a:hover { color: var(--color-accent-4); }
+  :focus-visible { outline: 2px solid var(--color-e80-black); outline-offset: 2px; }
+}
+
+@keyframes e80-fade { from { opacity: 0 } to { opacity: 1 } }
+.fade-in { animation: e80-fade 150ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* Graph nodes: keyboard focus draws a ring instead of the browser outline */
+.gnode { outline: none; }
+.gnode .focus-ring { opacity: 0; }
+.gnode:focus-visible .focus-ring { opacity: 1; }
+
+@layer components {
+  /* Card: flat gray surface, 4px amber top rule, square corners */
+  .e80-card {
+    @apply bg-surface border-t-4 border-accent;
+  }
+  .e80-eyebrow {
+    @apply text-xs font-bold uppercase tracking-eyebrow text-e80-gray;
+  }
+  .e80-btn {
+    @apply inline-flex items-center gap-2 bg-e80-black px-5 py-3 text-sm font-bold uppercase leading-none tracking-eyebrow text-white transition-colors duration-150 cursor-pointer;
+  }
+  .e80-btn:hover { @apply bg-accent-4 text-e80-black; }
+  .e80-btn:disabled { @apply opacity-60 cursor-wait; }
+  .e80-btn-outline {
+    @apply inline-flex items-center gap-2 border border-e80-black bg-white px-4 py-2.5 text-xs font-bold uppercase leading-none tracking-eyebrow transition-colors duration-150 cursor-pointer;
+  }
+  .e80-btn-outline:hover { @apply bg-accent; }
+  .e80-panel-title { @apply text-sm font-bold uppercase tracking-title; }
+}
