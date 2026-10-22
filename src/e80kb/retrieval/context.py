@@ -26,8 +26,8 @@ def gather(question: str, node_ids, groups: list[str], limit: int = 12) -> list[
     if terms := _terms(question):
         rows += db.read(
             f"""
-            MATCH (c:Chunk)
-            SEARCH c IN (FULLTEXT INDEX chunk_text FOR $terms LIMIT 50) SCORE AS score
+            CALL db.index.fulltext.queryNodes('chunk_text', $terms)
+            YIELD node AS c, score
             MATCH (c)-[:FROM_DOCUMENT]->(d:Document)
             WHERE d.acl IN $groups
             WITH d, c, score ORDER BY score DESC LIMIT 5

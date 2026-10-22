@@ -70,7 +70,7 @@ async def build(meta: DocMeta, chunks: list[Chunk], catalog: Catalog, use_llm: b
         return (await LexicalGraphBuilder(LEXICAL).run(text_chunks, document)).graph
 
     extractor = LLMEntityRelationExtractor(
-        llm=llm.client(), prompt_template=ERExtractionTemplate(template=TEMPLATE), on_error=OnError.IGNORE,
+        llm=llm.client(), prompt_template=ERExtractionTemplate(template=TEMPLATE), on_error=OnError.RAISE,
     )
     graph = await extractor.run(text_chunks, document, LEXICAL, SCHEMA, examples=_context(meta, catalog))
     _canonical_keys(graph, catalog)

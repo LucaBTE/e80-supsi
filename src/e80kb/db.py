@@ -43,7 +43,8 @@ def init_schema() -> None:
     # so domain keys get indexes, not uniqueness constraints.
     for row in read("SHOW CONSTRAINTS YIELD name, labelsOrTypes WHERE labelsOrTypes[0] IN $labels RETURN name",
                     labels=list(schema.DOMAIN_LABELS)):
-        write(f"DROP CONSTRAINT `{row['name']}`")
+        name = row["name"].replace("`", "``")
+        write(f"DROP CONSTRAINT `{name}`")
     for label in schema.DOMAIN_LABELS:
         write(f"CREATE INDEX {label.lower()}_key IF NOT EXISTS FOR (n:{label}) ON (n.{schema.key_of(label)})")
     for label in schema.SOURCE_LABELS:
@@ -57,6 +58,7 @@ def init_schema() -> None:
     write("CREATE FULLTEXT INDEX chunk_text IF NOT EXISTS FOR (n:Chunk) ON EACH [n.text]")
     labels = "|".join(schema.DOMAIN_LABELS)
     write(f"CREATE FULLTEXT INDEX entity_names IF NOT EXISTS FOR (n:{labels}) ON EACH [n.name, n.code, n.id, n.title]")
+    write("CALL db.awaitIndexes(300)")
 
 
 @dataclass

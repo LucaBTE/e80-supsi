@@ -9,6 +9,9 @@ ALLOWED = [
     "MATCH p = (a:Process)-[*1..2]-(b) RETURN [x IN nodes(p) | x.name] AS names, labels(a)[0] AS label",
     "MATCH (i:Issue) RETURN i.description, collect(i.id)[..3] AS ids",
     "MATCH (t:TestCase) RETURN CASE WHEN t.result = 'OK' THEN [t] ELSE [] END AS ok",
+    "MATCH (n:System) WHERE n.name = 'https://example.com/Chunk' RETURN n",
+    "MATCH (n:System) RETURN n.`name`, collect(n)[-2..]",
+    "// a quote '\nMATCH (n:System) RETURN n.name // another quote '",
 ]
 
 FORBIDDEN = [
@@ -24,6 +27,13 @@ FORBIDDEN = [
     "MATCH (n) RETURN n['te' + 'xt']",
     "LOAD CSV FROM 'file:///etc/passwd' AS row RETURN row",
     "",
+    "MATCH (n) RETURN n.`text`",
+    "MATCH (n) RETURN `properties`(n)",
+    "MATCH (n) RETURN n { name: n.name, .* }",
+    "MATCH (n) RETURN n[0 + 'text']",
+    "MATCH (n) RETURN n[..'text']",
+    "// a quote '\nMATCH (n) DELETE n // another quote '",
+    "INSERT (n:System {name: 'x'})",
 ]
 
 

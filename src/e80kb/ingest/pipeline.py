@@ -17,6 +17,10 @@ log = logging.getLogger(__name__)
 
 def ingest(root: Path, workers: int = 4, use_llm: bool = True, prune: bool = False, force: bool = False) -> Counter:
     """Load every supported file under `root`. Returns a count per outcome."""
+    if not root.is_dir():
+        raise ValueError(f"data root is not a directory: {root}")
+    if workers < 1:
+        raise ValueError("workers must be at least 1")
     return asyncio.run(_ingest(root, workers, use_llm, prune, force))
 
 

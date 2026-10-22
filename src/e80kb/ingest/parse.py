@@ -47,10 +47,11 @@ def _docx(path: Path) -> list[Chunk]:
         if isinstance(block, Table):
             for row in block.rows:
                 cells = []
+                previous = None
                 for cell in row.cells:  # merged cells repeat
-                    text = cell.text.strip()
-                    if not cells or text != cells[-1]:
-                        cells.append(text)
+                    if cell._tc is not previous:
+                        cells.append(cell.text.strip())
+                    previous = cell._tc
                 if any(cells):
                     lines.append(" | ".join(cells))
             continue
@@ -120,7 +121,11 @@ def _table(name: str, rows: list[list[str]]) -> list[Chunk]:
     rows = [row for row in rows if any(row)]
     first = min((next(i for i, c in enumerate(row) if c) for row in rows), default=0)  # skip empty left columns
     rows = [row[first:] for row in rows]
-    header_at = next((i for i, row in enumerate(rows) if sum(1 for c in row if c) >= 3), None)
+    first_record = next((i for i, row in enumerate(rows) if row and RECORD_ID.fullmatch(row[0])), None)
+    # A requirement sheet can have only an ID and a title column.
+    minimum_columns = 2 if first_record is not None else 3
+    header_at = next((i for i, row in enumerate(rows[:first_record])
+                      if sum(1 for c in row if c) >= minimum_columns), None)
     if header_at is None:
         return _split("\n".join(" | ".join(c for c in row if c) for row in rows), name)
 

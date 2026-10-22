@@ -7,12 +7,10 @@ old version stay on their entities (relationships carry no chunk reference).
 
 from collections import defaultdict
 
-from .. import db
+from .. import db, schema
 from .classify import DocMeta, process_lineage
 from .parse import Chunk
 
-# Record id prefix -> (label, relationship from the project)
-RECORD_KINDS = {"RQ": ("Requirement", "HAS_REQ"), "TST": ("TestCase", "HAS_TEST"), "TC": ("TestCase", "HAS_TEST")}
 # Record property -> words that identify its column header
 RECORD_FIELDS = {
     "title": ("title", "titolo"),
@@ -71,7 +69,7 @@ def link_document(meta: DocMeta) -> None:
                 path=meta.path, code=meta.process, name=meta.process_name,
             )
             for child, rel, parent in process_lineage(meta.process):
-                # rel comes from process_lineage: PART_OF or VARIANT_OF
+                rel = next(t for t, a, b in schema.RELATIONS if t == rel and a == b == "Process")
                 tx.run(
                     f"""
                     MERGE (c:Process {{code: $child}}) SET c:__Entity__
@@ -93,7 +91,7 @@ def write_records(meta: DocMeta, ids: list[str], chunks: list[Chunk]) -> None:
         if not chunk.record:
             continue
         record_id = next(iter(chunk.record.values()))
-        kind = RECORD_KINDS.get(record_id.split("-")[0])
+        kind = schema.RECORD_KINDS.get(record_id.split("-")[0])
         if kind:
             rows[kind].append({"id": record_id, "props": _record_props(chunk.record), "chunk": chunk_id})
 

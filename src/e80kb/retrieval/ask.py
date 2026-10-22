@@ -33,7 +33,7 @@ Graph rows ({len(result.rows)} rows, at most {MAX_ROWS} shown):
 Source excerpts:
 {context.render(sources)}"""
     answer = llm.text(SYSTEM, content)
-    cited = _cited(answer)
+    cited = _cited(answer, max_source=len(sources))
     for source in sources:
         source["cited"] = source["n"] in cited
     return {
@@ -46,10 +46,10 @@ Source excerpts:
     }
 
 
-def _cited(answer: str) -> set[int]:
+def _cited(answer: str, max_source: int = 1000) -> set[int]:
     """Source numbers cited in the answer: [2], [1, 3], [4-6]."""
     cited = set()
     for group in re.findall(r"\[([\d\s,\-–]+)\]", answer):
         for start, end in re.findall(r"(\d+)(?:\s*[-–]\s*(\d+))?", group):
-            cited.update(range(int(start), int(end or start) + 1))
+            cited.update(range(max(0, int(start)), min(int(end or start), max_source) + 1))
     return cited

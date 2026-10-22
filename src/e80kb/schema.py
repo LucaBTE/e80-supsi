@@ -81,6 +81,9 @@ RELATIONS = (
 RELATION_SET = frozenset(RELATIONS)
 RELATION_TYPES = tuple(sorted({rel_type for rel_type, _, _ in RELATIONS}))
 
+# Spreadsheet record prefix -> (label, relationship from the project).
+RECORD_KINDS = {"RQ": ("Requirement", "HAS_REQ"), "TST": ("TestCase", "HAS_TEST"), "TC": ("TestCase", "HAS_TEST")}
+
 # Written by the loader only. The lexical graph follows neo4j-graphrag:
 # (Chunk)-[:FROM_DOCUMENT]->(Document), (Chunk)-[:NEXT_CHUNK]->(Chunk), (entity)-[:FROM_CHUNK]->(Chunk).
 SOURCE_RELATIONS = ("FROM", "ABOUT", "NEW_REV_OF", "FROM_DOCUMENT", "NEXT_CHUNK", "FROM_CHUNK")
@@ -88,6 +91,16 @@ SOURCE_RELATIONS = ("FROM", "ABOUT", "NEW_REV_OF", "FROM_DOCUMENT", "NEXT_CHUNK"
 # Every domain node carries this label: neo4j-graphrag resolves duplicates among them.
 ENTITY_LABEL = "__Entity__"
 INTERNAL_LABELS = (ENTITY_LABEL, "__KGBuilder__")
+
+# Properties accepted by extraction in addition to each node's key and name.
+NODE_PROPS = {
+    "Project": {"code": "STRING", "status": "STRING"},
+    "Activity": {"seq": "INTEGER", "kind": "STRING"},
+    "Person": {"title": "STRING", "aliases": "LIST"},
+    "System": {"aliases": "LIST"},
+    "Requirement": {"priority": "STRING", "status": "STRING"},
+    "TestCase": {"result": "STRING", "date": "STRING"},
+}
 
 REL_PROPS = {
     "WORKS_ON": ("role", "PM, sponsor, stakeholder, team, tester or partner"),
@@ -120,6 +133,7 @@ def graph_schema() -> GraphSchema:
         props = [PropertyType(name=key, type="STRING", description=f"key: {description}")]
         if (name := NAME_PROPS.get(label)) and name != key:
             props.append(PropertyType(name=name, type="STRING", description="readable name"))
+        props.extend(PropertyType(name=name, type=kind) for name, kind in NODE_PROPS.get(label, {}).items())
         return NodeType(label=label, description=description, properties=props, additional_properties=False)
 
     def rel(rel_type: str) -> RelationshipType:

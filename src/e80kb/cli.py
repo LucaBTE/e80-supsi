@@ -37,7 +37,7 @@ def main() -> None:
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    for noisy in ("httpx", "google_genai"):
+    for noisy in ("httpx", "mistralai"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
     if args.command == "init":
@@ -46,9 +46,16 @@ def main() -> None:
     elif args.command == "ingest":
         from .ingest.pipeline import ingest as run_ingest
 
+        if not args.root.is_dir():
+            parser.error(f"data root is not a directory: {args.root}")
+        if args.workers < 1:
+            parser.error("--workers must be at least 1")
         db.init_schema()
         aliases.load()
-        print(dict(run_ingest(args.root, args.workers, not args.no_llm, args.prune, args.force)))
+        stats = run_ingest(args.root, args.workers, not args.no_llm, args.prune, args.force)
+        print(dict(stats))
+        if stats.get("failed", 0):
+            raise SystemExit(1)
     elif args.command == "ask":
         from .retrieval.ask import ask as run_ask
 

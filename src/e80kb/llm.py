@@ -1,16 +1,23 @@
-"""Gemini through neo4j-graphrag's LLM interface, shared by every pipeline step."""
+"""Mistral through neo4j-graphrag's LLM interface, shared by every pipeline step."""
 
+import os
 from functools import cache
 
-from neo4j_graphrag.llm import GeminiLLM
+from neo4j_graphrag.llm import MistralAILLM
 
 from . import config
 
 
+class ConfigurationError(ValueError):
+    """The LLM cannot be used with the current local settings."""
+
+
 @cache
-def client() -> GeminiLLM:
-    # Reads GOOGLE_API_KEY (or GEMINI_API_KEY) from the environment; retries rate limits.
-    return GeminiLLM(model_name=config.MODEL)
+def client() -> MistralAILLM:
+    api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
+    if not api_key:
+        raise ConfigurationError("MISTRAL_API_KEY is required; set it in .env or the environment")
+    return MistralAILLM(model_name=config.MODEL, api_key=api_key)
 
 
 def text(system: str, content: str) -> str:
