@@ -63,7 +63,7 @@ export default function EntityList({ model, filter, onFilter, selectedId, onSele
   )
 
   return (
-    <section className="flex max-h-[75vh] min-h-0 flex-col border border-line bg-white lg:max-h-none">
+    <section className="flex h-[min(60vh,34rem)] min-h-[18rem] min-w-0 flex-col border border-line bg-white lg:h-full lg:min-h-0">
       <header className="flex items-center gap-3 border-b border-line px-5 py-3">
         <span className="h-5 w-[9px] bg-accent" aria-hidden />
         <h2 className="e80-panel-title">Entities and sources</h2>

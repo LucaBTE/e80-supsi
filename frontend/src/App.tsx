@@ -5,11 +5,12 @@ import AnalysisView from './components/AnalysisView'
 import ProcessesView from './components/ProcessesView'
 import ProjectsView from './components/ProjectsView'
 import InfoView from './components/InfoView'
+import { AnalysisLoading, ChatLoading } from './components/LoadingViews'
 import { ask, fetchCatalog } from './lib/api'
 import { answerScenario, catalogProjects, graphScenario, infoAnswer } from './lib/adapter'
 import type { InfoAnswer, Project, Scenario } from './types'
 import kipLogo from '../assets/kip-logo-no-bg.png'
-import e80Logo from '../assets/logo-e80.svg'
+import e80Logo from '../assets/LOGO-E80-GROUP-BLACK.png'
 
 const PLACEHOLDER: Record<Tab, string> = {
   processes: 'Filter by code, process, activity, role or system…', projects: 'Filter by code, name or owner…',
@@ -99,11 +100,11 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-4 px-4 py-4 sm:px-8 lg:h-screen lg:overflow-y-auto">
+    <div className="flex min-h-dvh min-w-0 flex-col gap-4 px-4 py-4 sm:px-8">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
+          <img src={e80Logo} alt="E80 Group" className="h-12 w-[160px] object-contain" />
           <img src={kipLogo} alt="KiP" className="h-12 w-[68px] object-contain" />
-          <span className="flex h-12 items-center bg-e80-black px-3"><img src={e80Logo} alt="E80 Group" className="h-8 w-[108px] object-contain" /></span>
           <span className="e80-eyebrow">Knowledge Trace</span>
           <span role="status" className="ml-auto text-xs text-e80-gray">{catalogLoading ? 'Loading catalog…' : catalogError ? 'Catalog unavailable' : `${catalog.entities.length} indexed entities`}</span>
           <button className="e80-btn-outline" disabled={catalogLoading} onClick={() => void loadCatalog()}>Refresh catalog</button>
@@ -119,9 +120,8 @@ export default function App() {
       {truncated && <p role="status" className="bg-surface p-3 text-sm">The catalog exceeds the display limit. Questions still query the entire graph.</p>}
       {!catalogLoading && !catalogError && !catalog.entities.length && <p role="status" className="bg-surface p-4 text-sm">The database is empty. Load the sample seed, then refresh the catalog.</p>}
       {errors[tab] && <p role="alert" className="border-l-4 border-accent-4 bg-surface p-4 text-sm">{errors[tab]}</p>}
-      {busy && <p role="status" className="text-sm text-e80-gray">Searching…</p>}
       <main id="view-analysis" role="tabpanel" aria-labelledby="tab-analysis" hidden={tab !== 'analysis'} className="flex min-h-0 flex-1 flex-col">
-        {scenario ? <AnalysisView key={analysisVersion} scenario={scenario} loading={busy === 'analysis'} initialSelect={pendingSelect} /> :
+        {busy === 'analysis' ? <AnalysisLoading /> : scenario ? <AnalysisView key={analysisVersion} scenario={scenario} initialSelect={pendingSelect} /> :
           <div className="e80-card p-8 text-e80-gray">Enter a question to analyze connected processes, systems and people in the graph.</div>}
       </main>
       <main id="view-processes" role="tabpanel" aria-labelledby="tab-processes" hidden={tab !== 'processes'} className="flex min-h-0 flex-1 flex-col">
@@ -132,7 +132,7 @@ export default function App() {
           onOpenAnalysis={openAnalysis} onOpenProcess={(key) => { setProcessKey(key); setQueries((q) => ({ ...q, processes: '' })); setTab('processes') }} />
       </main>
       <main id="view-info" role="tabpanel" aria-labelledby="tab-info" hidden={tab !== 'info'} className="flex min-h-0 flex-1 flex-col gap-4">
-        <InfoView answer={info} loaded={info !== null} selectedCite={cite} onSelectCite={setCite} />
+        {busy === 'info' ? <ChatLoading /> : <InfoView answer={info} loaded={info !== null} selectedCite={cite} onSelectCite={setCite} />}
       </main>
     </div>
   )

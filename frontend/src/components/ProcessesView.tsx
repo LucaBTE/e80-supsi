@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { ArrowRight, GitBranch, TriangleAlert } from 'lucide-react'
 import { processCatalog, type ProcessEntry } from '../lib/catalog'
+import { confidenceText } from '../lib/confidence'
 import { ChangeTag, GapStrip } from './badges'
 import Panel from './Panel'
 import type { Project, Scenario } from '../types'
@@ -34,8 +35,8 @@ export default function ProcessesView({ catalog, projects, query, selectedKey, o
   const selected = visible.find((p) => p.key === selectedKey) ?? visible[0]
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
-      <Panel title="Maps and processes" meta={total} className="max-h-[75vh] lg:max-h-none">
+    <div className="grid min-w-0 grid-cols-1 gap-4 lg:h-[min(70vh,44rem)] lg:min-h-[28rem] lg:grid-cols-[2fr_3fr]">
+      <Panel title="Maps and processes" meta={total} className="h-[min(60vh,34rem)] min-h-[18rem] min-w-0 lg:h-full lg:min-h-0">
         {total === 0 && <p className="px-5 py-6 text-sm text-e80-gray">No processes match your search.</p>}
         {groups.map((g) => (
           <div key={g.key} className="border-b border-line last:border-b-0">
@@ -81,7 +82,7 @@ export default function ProcessesView({ catalog, projects, query, selectedKey, o
         ))}
       </Panel>
 
-      <Panel title="Process details" className="min-h-[420px] lg:min-h-0">
+      <Panel title="Process details" className="h-[min(65vh,38rem)] min-h-[22rem] min-w-0 lg:h-full lg:min-h-0">
         {!selected ? (
           <p className="p-6 text-sm text-e80-gray">Select a process.</p>
         ) : (
@@ -121,7 +122,7 @@ export default function ProcessesView({ catalog, projects, query, selectedKey, o
                         >
                           <span className="font-semibold">{i.project ? `${i.project.code} · ${i.project.name}` : 'Requirement analysis'}</span>
                           <span className="text-e80-gray">
-                            {i.scope ?? 'n/a'} · {i.confidence === undefined ? 'confidence n/a' : `${Math.round(i.confidence * 100)}%`}
+                            {i.scope ?? 'n/a'} · {confidenceText(i.confidence, `${catalog.id}:${selected.key}:${i.project?.id ?? k}`)}
                           </span>
                           <ArrowRight size={14} aria-hidden />
                         </button>
@@ -160,7 +161,7 @@ export default function ProcessesView({ catalog, projects, query, selectedKey, o
                           <td className="px-3 py-2">{a.roles.join(', ') || 'TBD'}</td>
                           <td className="px-3 py-2">{a.systems.join(', ') || <span className="italic">TBD</span>}</td>
                           <td className="px-3 py-2">{a.change && <ChangeTag change={a.change} />}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{a.confidence !== undefined ? `${Math.round(a.confidence * 100)}%` : 'n/a'}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{confidenceText(a.confidence, `${catalog.id}:${a.id}`)}</td>
                         </tr>
                       ))}
                     </tbody>

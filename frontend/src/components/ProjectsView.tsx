@@ -44,8 +44,8 @@ export default function ProjectsView({ projects, catalog, query, selectedId, onS
   const s = selected && SUMMARIES[selected.id]
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
-      <Panel title="Projects" meta={list.length} className="max-h-[75vh] lg:max-h-none">
+    <div className="grid min-w-0 grid-cols-1 gap-4 lg:h-[min(70vh,44rem)] lg:min-h-[28rem] lg:grid-cols-[2fr_3fr]">
+      <Panel title="Projects" meta={list.length} className="h-[min(60vh,34rem)] min-h-[18rem] min-w-0 lg:h-full lg:min-h-0">
         {list.length === 0 && <p className="px-5 py-6 text-sm text-e80-gray">No projects match your search.</p>}
         <ul className="divide-y divide-line">
           {list.map((p) => {
@@ -83,7 +83,7 @@ export default function ProjectsView({ projects, catalog, query, selectedId, onS
 
       <Panel
         title="Project details"
-        className="min-h-[420px] lg:min-h-0"
+        className="h-[min(65vh,38rem)] min-h-[22rem] min-w-0 lg:h-full lg:min-h-0"
         actions={
           selected?.scenarioId && (
             <button type="button" className="e80-btn ml-auto px-4 py-2 text-xs" onClick={() => onOpenAnalysis(`Which processes, systems and people are affected by project "${selected.name}"?`)}>

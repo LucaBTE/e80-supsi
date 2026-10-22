@@ -62,7 +62,7 @@ uv run e80kb ask "Who should be involved in a change to Salesforce?"
 uv run e80kb doc impact Project "Document Automation"
 ```
 
-The interface, generated answers and default reports are in English. Original source names, codes and quotations retain their original language. The UI has process and project catalogs, impact analysis and document questions. Analysis and information tabs call the same real question-answering API. Selecting an entity opens its graph relations and excerpts; its detail panel can generate and download a Markdown impact report with source references. Missing metadata and confidence scores are shown as unavailable.
+The interface, generated answers and default reports are in English. Original source names, codes and quotations retain their original language. The UI has process and project catalogs, impact analysis and document questions. Analysis and information tabs call the same real question-answering API. Selecting an entity opens its graph relations and excerpts; its detail panel can generate and download a Markdown impact report with source references. Missing confidence scores are displayed as clearly labeled demo values from 83% to 99%; these values are not calculated from evidence or stored in the graph.
 
 ## Development
 

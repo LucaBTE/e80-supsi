@@ -4,6 +4,7 @@ import { chainFor, citationsFor, confidenceOf, explain, TYPE_LABEL, type Model }
 import { GapStrip } from './badges'
 import { typeIcon } from './icons'
 import ReportButton from './ReportButton'
+import { displayConfidence } from '../lib/confidence'
 
 type Props = {
   model: Model
@@ -18,6 +19,7 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
   const e = model.byId[id]
   const Icon = typeIcon[e.type]
   const conf = confidenceOf(model, id)
+  const displayedConfidence = displayConfidence(conf, `${model.scenario.id}:${id}`)
   const chain = chainFor(model, id)
   const cites = citationsFor(model, id)
   const gaps = model.gapsByEntity[id] ?? []
@@ -54,9 +56,9 @@ export default function DetailDrawer({ model, id, onClose, onSelect, variant = '
         {e.backend && e.type !== 'document' && <ReportButton key={id} target={e.backend} />}
         <div className="flex items-end gap-4">
           <div>
-            <p className="e80-eyebrow">Confidence</p>
+            <p className="e80-eyebrow">Confidence{displayedConfidence.demo ? ' · demo' : ''}</p>
             <p className="border-b-4 border-accent text-5xl font-bold leading-tight">
-              {conf !== undefined ? `${Math.round(conf * 100)}%` : 'n/a'}
+              {displayedConfidence.percent}%
             </p>
           </div>
           <p className="pb-1 text-sm">{explain(model, id)}</p>

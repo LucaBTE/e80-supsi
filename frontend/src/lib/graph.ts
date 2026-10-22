@@ -9,7 +9,7 @@ export type GNode = {
   isRoot: boolean
   collapsible: boolean
 }
-export type GEdge = { id: string; from: string; to: string; kind: RelationKind; scope: Scope; confidence?: number }
+export type GEdge = { id: string; from: string; to: string; kind: RelationKind; scope: Scope; confidence?: number; layoutOnly?: boolean }
 export type Graph = {
   nodes: GNode[]
   edges: GEdge[]
@@ -94,6 +94,40 @@ export function buildGraph(m: Model, expanded: Set<string>): Graph {
   const ids = new Set<string>([rootId])
   for (const e of edges.values()) ids.add(e.from).add(e.to)
   for (const e of Object.values(byId)) if (shown(e.id)) ids.add(e.id)
+
+  // Keep disconnected results in one navigable view. These links group visual
+  // components under the overview; they are not relationships from the graph.
+  const adjacency = new Map([...ids].map((id) => [id, new Set<string>()]))
+  for (const edge of edges.values()) {
+    adjacency.get(edge.from)?.add(edge.to)
+    adjacency.get(edge.to)?.add(edge.from)
+  }
+  const connected = new Set<string>()
+  const component = (start: string) => {
+    const members: string[] = []
+    const queue = [start]
+    connected.add(start)
+    for (let i = 0; i < queue.length; i++) {
+      const id = queue[i]
+      members.push(id)
+      for (const next of adjacency.get(id) ?? []) {
+        if (connected.has(next)) continue
+        connected.add(next)
+        queue.push(next)
+      }
+    }
+    return members
+  }
+  component(rootId)
+  for (const id of ids) {
+    if (connected.has(id)) continue
+    const members = component(id)
+    const group = new Set(members)
+    const representative = members.find((member) => ![...edges.values()].some((edge) => edge.to === member && group.has(edge.from))) ?? members[0]
+    const edgeId = `${rootId}>${representative}`
+    edges.set(edgeId, { id: edgeId, from: rootId, to: representative,
+      kind: 'related_to', scope: 'indirect', layoutOnly: true })
+  }
   const edgeList = [...edges.values()]
 
   // Live graphs may contain cycles. Shortest-path layers stay finite and
@@ -114,10 +148,6 @@ export function buildGraph(m: Model, expanded: Set<string>): Graph {
     }
   }
   visit(rootId, 0)
-  // A synthetic overview has no invented edges. Lay out each real component
-  // from one of its roots, then handle components made entirely of cycles.
-  for (const id of ids) if (layer[id] === undefined && !edgeList.some((e) => e.to === id)) visit(id, 1)
-  for (const id of ids) if (layer[id] === undefined) visit(id, 1)
   const layers: string[][] = []
   ids.forEach((id) => (layers[layer[id]] ??= []).push(id))
 

@@ -1,7 +1,6 @@
 import { Sparkles } from 'lucide-react'
 import { metaLine, type Model } from '../lib/model'
 import { CiteChip } from './badges'
-import GapCallout from './GapCallout'
 import MarkdownAnswer from './MarkdownAnswer'
 
 type Props = { model: Model; selectedId: string | null; onSelect: (id: string) => void }
@@ -19,7 +18,6 @@ export default function Overview({ model, selectedId, onSelect }: Props) {
         <p className="ml-auto text-xs text-e80-gray">{model.byId[model.rootId]?.type === 'document' ? 'Select a document to inspect why it should be reviewed.' : 'Select an entity to generate an impact report.'}</p>
       </div>
 
-      <div className="grid gap-x-6 gap-y-3 xl:grid-cols-[3fr_2fr]">
       <div className="space-y-1.5 text-[15px] leading-relaxed">
         {model.scenario.overview.map((s, i) => (
           <div key={i}>
@@ -29,9 +27,6 @@ export default function Overview({ model, selectedId, onSelect }: Props) {
             ))}
           </div>
         ))}
-      </div>
-
-      <GapCallout model={model} selectedId={selectedId} onSelect={onSelect} />
       </div>
 
       {!!model.scenario.sources?.length && <details className="border-t border-line pt-3 text-sm">

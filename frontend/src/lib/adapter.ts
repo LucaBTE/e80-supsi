@@ -62,6 +62,25 @@ export function graphScenario(graph: ApiGraph, sources: ApiSource[] = [], query 
 
 export function answerScenario(result: AskResponse, query: string): Scenario {
   const scenario = graphScenario(result.graph, result.sources, query, result.root_document_id)
+  if (!result.root_document_id) {
+    const question = query.normalize('NFKC').toLocaleLowerCase()
+    const mentioned = scenario.entities.flatMap((entity) =>
+      [entity.label, entity.code].filter((term): term is string => !!term).flatMap((term) => {
+        const name = term.normalize('NFKC').toLocaleLowerCase()
+        let at = question.indexOf(name)
+        while (at >= 0) {
+          const before = question[at - 1]
+          const after = question[at + name.length]
+          if ((!before || !/[\p{L}\p{N}]/u.test(before)) && (!after || !/[\p{L}\p{N}]/u.test(after))) {
+            return [{ id: entity.id, length: name.length, at }]
+          }
+          at = question.indexOf(name, at + 1)
+        }
+        return []
+      }),
+    ).sort((a, b) => b.length - a.length || a.at - b.at)
+    if (mentioned.length) scenario.rootId = mentioned[0].id
+  }
   scenario.overview = [{ text: result.answer, cites: [] }]
   scenario.cypherError = result.cypher_error
   return scenario

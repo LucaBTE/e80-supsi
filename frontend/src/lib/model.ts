@@ -1,5 +1,6 @@
 import type { Citation, Entity, EntityType, Gap, Relation, Scenario, Scope } from '../types'
 import { computeGaps } from './gaps'
+import { displayConfidence } from './confidence'
 
 export type Filter = 'all' | 'direct' | 'indirect' | 'gap'
 
@@ -262,7 +263,8 @@ const META_TYPES: [EntityType, string, string][] = [
 
 /** "Confidence 81% · 3 maps · 12 activities · 5 gaps" — all derived. */
 export function metaLine(m: Model): string[] {
-  const parts = [m.confidence === undefined ? 'Confidence n/a' : `Confidence ${Math.round(m.confidence * 100)}%`]
+  const confidence = displayConfidence(m.confidence, m.scenario.id)
+  const parts = [`Confidence ${confidence.percent}%${confidence.demo ? ' (demo)' : ''}`]
   for (const [type, one, many] of META_TYPES) {
     if (parts.length >= 3) break
     const n = m.scenario.entities.filter((e) => e.type === type).length

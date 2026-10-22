@@ -24,6 +24,7 @@ export default function GraphViewport(props: CanvasProps) {
     const element = viewport.current
     if (!element) return
     const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
       event.preventDefault()
       const bounds = element.getBoundingClientRect()
       zoom(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX - bounds.left, event.clientY - bounds.top)
@@ -62,7 +63,7 @@ export default function GraphViewport(props: CanvasProps) {
       ref={viewport}
       role="region"
       tabIndex={0}
-      aria-label="Interactive graph. Drag to pan, scroll to zoom, or use the zoom controls."
+      aria-label="Interactive graph. Drag to pan, Ctrl or Command plus scroll to zoom, or use the zoom controls."
       className="relative h-full min-h-full w-full overflow-hidden cursor-grab touch-none focus-visible:outline-2 active:cursor-grabbing"
       onPointerDown={startDrag}
       onPointerMove={moveDrag}

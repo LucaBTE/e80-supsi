@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { answerScenario, catalogProjects, graphScenario, infoAnswer } from '../src/lib/adapter.ts'
 import { buildGraph } from '../src/lib/graph.ts'
+import { displayConfidence } from '../src/lib/confidence.ts'
 import type { ApiGraph, AskResponse } from '../src/lib/api.ts'
 import type { Model } from '../src/lib/model.ts'
 
@@ -19,6 +20,14 @@ const graph: ApiGraph = {
   ],
 }
 const sources = [{ n: 1, chunk: 'c', document: 'Requirements', path: 'Projects/notes.md', loc: 'p.3', text: 'An excerpt.', entities: ['a'] }]
+
+test('labels missing confidence as a stable demo value in the requested range', () => {
+  const first = displayConfidence(undefined, 'Salesforce impact')
+  assert.equal(first.demo, true)
+  assert.ok(first.percent >= 83 && first.percent <= 99)
+  assert.deepEqual(displayConfidence(undefined, 'Salesforce impact'), first)
+  assert.deepEqual(displayConfidence(0.72, 'Salesforce impact'), { percent: 72, demo: false })
+})
 
 test('adapts real graph labels and keys without inventing evidence or confidence', () => {
   const scenario = graphScenario(graph, sources)
@@ -39,6 +48,23 @@ test('preserves answer, citations and query failure notices, including an empty 
   assert.equal(scenario.overview[0].text, result.answer)
   assert.equal(scenario.cypherError, 'Invalid query')
   assert.equal(infoAnswer(result, 'Example question').citations[0].passage, 'An excerpt.')
+})
+
+test('starts an impact graph from the entity named in the question', () => {
+  const result: AskResponse = {
+    answer: 'Salesforce is affected.', cypher: '', cypher_error: null, rows: [], sources: [],
+    graph: {
+      nodes: [
+        { id: 'project', labels: ['Project'], properties: { name: 'Rinnovi Offerte H24' } },
+        { id: 'salesforce', labels: ['System'], properties: { name: 'Salesforce' } },
+      ],
+      relationships: [{ id: 'change', type: 'CHANGES', start: 'project', end: 'salesforce', properties: {} }],
+    },
+  }
+  const scenario = answerScenario(result, 'We have a project in SALESFORCE, what does it impact?')
+  assert.equal(scenario.rootId, 'salesforce')
+  assert.equal(answerScenario(result, 'What does Rinnovi Offerte H24 impact?').rootId, 'project')
+  assert.equal(answerScenario(result, 'What is impacted?').rootId, '__overview__')
 })
 
 test('shows linked documents for a document change without adding source nodes to regular graphs', () => {
@@ -93,6 +119,11 @@ test('graph layout handles cyclic relationships and isolated nodes', () => {
   } as unknown as Model
   const output = buildGraph(model, new Set())
   assert.equal(output.nodes.length, 3)
+  const grouping = output.edges.filter((edge) => edge.layoutOnly)
+  assert.equal(grouping.length, 1)
+  assert.equal(grouping[0].from, 'p')
+  assert.equal(grouping[0].to, 'a')
+  assert.equal(output.edges.filter((edge) => !edge.layoutOnly).length, 2)
   assert.ok(Number.isFinite(output.width) && Number.isFinite(output.height))
   assert.ok(output.height < 1000)
 })

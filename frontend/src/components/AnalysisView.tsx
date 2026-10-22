@@ -8,10 +8,10 @@ import ExpandedView from './ExpandedView'
 import ImpactGraph from './ImpactGraph'
 import Overview from './Overview'
 
-type Props = { scenario: Scenario; loading: boolean; initialSelect?: string }
+type Props = { scenario: Scenario; initialSelect?: string }
 
 /** Impact analysis: Overview, entities 40% / graph 60%. Remounted on every new answer. */
-export default function AnalysisView({ scenario, loading, initialSelect }: Props) {
+export default function AnalysisView({ scenario, initialSelect }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoverId, setHoverId] = useState<string | null>(null)
@@ -58,9 +58,9 @@ export default function AnalysisView({ scenario, loading, initialSelect }: Props
   const canvas = { model, graph, filter, selectedId, hoverId, expanded, onNodeClick }
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col gap-4 transition-opacity duration-150 ${loading ? 'opacity-50' : ''}`}>
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <Overview model={model} selectedId={selectedId} onSelect={select} />
-      <div className="grid flex-1 grid-cols-1 gap-4 lg:min-h-[440px] lg:grid-cols-[2fr_3fr] lg:grid-rows-1">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:h-[min(70vh,44rem)] lg:min-h-[28rem] lg:grid-cols-[2fr_3fr] lg:grid-rows-1">
         <EntityList
           model={model}
           filter={filter}

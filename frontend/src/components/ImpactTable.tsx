@@ -1,6 +1,7 @@
 import { TriangleAlert } from 'lucide-react'
 import { impactOf, matchesFilter, related, type Filter, type Model } from '../lib/model'
 import { ChangeTag } from './badges'
+import { confidenceText } from '../lib/confidence'
 
 type Props = { model: Model; filter: Filter; selectedId: string | null; onSelect: (id: string) => void }
 
@@ -60,7 +61,7 @@ export default function ImpactTable({ model, filter, selectedId, onSelect }: Pro
                 <td className="px-3 py-2">{roles.map((r) => r.label).join(', ') || 'TBD'}</td>
                 <td className="px-3 py-2">{systems.map((s) => s.label).join(', ') || <span className="italic">TBD</span>}</td>
                 <td className="px-3 py-2">{imp?.change && <ChangeTag change={imp.change} />}</td>
-                <td className="px-3 py-2 text-right font-semibold tabular-nums">{imp?.confidence !== undefined ? `${Math.round(imp.confidence * 100)}%` : 'n/a'}</td>
+                <td className="px-3 py-2 text-right font-semibold tabular-nums">{confidenceText(imp?.confidence, `${model.scenario.id}:${a.id}`)}</td>
               </tr>
             )
           })}

@@ -11,6 +11,12 @@ const C = { black: '#2D2926', gray: '#666666', soft: '#9A9A9A', accent: '#FFDC73
 const trunc = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 
 function edgeStyle(e: GEdge, hl: boolean) {
+  if (e.layoutOnly) return {
+    stroke: C.soft,
+    strokeWidth: 1.2,
+    strokeDasharray: '2 5',
+    marker: undefined,
+  }
   const source = e.kind === 'source'
   return {
     stroke: hl ? C.strong : source ? C.soft : C.black,
@@ -60,17 +66,24 @@ export function GraphCanvas({ model, graph, filter, selectedId, hoverId, expande
       {graph.edges.map((e) => {
         const a = pos[e.from]
         const b = pos[e.to]
-        // Leave below the source label, arrive on top of the target circle
-        const y1 = a.y + (a.isRoot ? 26 : 19) + 8 + labelLines(a.id) * 13
-        const y2 = b.y - (b.isRoot ? 26 : 19) - 1
-        const dy = (y2 - y1) / 2
+        const down = b.y > a.y
+        const sameRow = Math.abs(b.y - a.y) < 8
+        const side = b.x >= a.x ? 1 : -1
+        const x1 = sameRow ? a.x + side * (a.isRoot ? 26 : 19) : a.x
+        const x2 = sameRow ? b.x - side * (b.isRoot ? 26 : 19) : b.x
+        const y1 = sameRow ? a.y : down ? a.y + (a.isRoot ? 26 : 19) + 8 + labelLines(a.id) * 13 : a.y - (a.isRoot ? 26 : 19) - 1
+        const y2 = sameRow ? b.y : down ? b.y - (b.isRoot ? 26 : 19) - 1 : b.y + (b.isRoot ? 26 : 19) + 1
+        const mid = (y1 + y2) / 2
+        const curve = sameRow
+          ? `M${x1},${y1} C${x1},${y1 - 35} ${x2},${y2 - 35} ${x2},${y2}`
+          : `M${x1},${y1} C${x1},${mid} ${x2},${mid} ${x2},${y2}`
         const hl = !!path?.edges.has(e.id)
         const faded = (path && !hl) || !passes(e.from) || !passes(e.to)
         const s = edgeStyle(e, hl)
         return (
           <path
             key={e.id}
-            d={`M${a.x},${y1} C${a.x},${y1 + dy} ${b.x},${y2 - dy} ${b.x},${y2}`}
+            d={curve}
             fill="none"
             stroke={s.stroke}
             strokeWidth={s.strokeWidth}
@@ -174,6 +187,7 @@ export function Legend() {
       <span className="flex items-center gap-2">{line()} Direct</span>
       <span className="flex items-center gap-2">{line('9 5')} Indirect</span>
       <span className="flex items-center gap-2">{line('3 3', C.soft, 1.4)} Source</span>
+      <span className="flex items-center gap-2">{line('2 5', C.soft, 1.2)} Visual grouping</span>
       <span className="flex items-center gap-2">
         <svg width="16" height="16" aria-hidden>
           <circle cx="8" cy="8" r="6.5" fill="#fff" stroke={C.strong} strokeWidth="2" strokeDasharray="3 2" />
@@ -189,7 +203,7 @@ type Props = CanvasProps & { onExpand: () => void }
 
 export default function ImpactGraph({ onExpand, ...canvas }: Props) {
   return (
-    <section className="flex min-h-[420px] flex-col border border-line bg-white lg:h-full lg:min-h-0">
+    <section className="flex h-[min(60vh,34rem)] min-h-[22rem] min-w-0 flex-col border border-line bg-white lg:h-full lg:min-h-0">
       <header className="flex items-center gap-3 border-b border-line px-5 py-3">
         <span className="h-5 w-[9px] bg-accent" aria-hidden />
         <h2 className="e80-panel-title">Graph</h2>
